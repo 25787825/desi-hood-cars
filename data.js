@@ -1531,5 +1531,18 @@ const INITIAL_BLOGS = [
     image: "https://images.unsplash.com/photo-1609521263047-f8f205293f24?auto=format&fit=crop&w=1200&q=80",
     excerpt: "Suzuki spotlights its first global BEV—the e VITARA with ALLGRIP-e 4WD—alongside 10M cumulative Swift sales, Jimny demand, and Technology Strategy 2026.",
     content: "Official announcements from Global Suzuki highlight the automaker's global EV rollout, iconic compact SUV demand, and 10-year engineering roadmap.\n\nHeadlining the lineup is Suzuki's first global battery electric SUV, the all-new e VITARA built on the dedicated HEARTECT-e platform with 49 kWh to 61 kWh battery options and ALLGRIP-e dual-eAxle electric 4WD.\n\nSuzuki also celebrated surpassing 10 million cumulative global Swift sales, sustained international demand across 3-door and 5-door Jimny models, and its Technology Strategy 2026 focused on energy minimization and multi-pathway electrification.\n\nOfficial Global Portal: https://www.globalsuzuki.com/"
+  },
+  {
+    id: "blog-news-byd",
+    title: "BYD Global Updates: Blade Battery 2.0, ATTO 3 EVO & God's Eye ADAS",
+    category: "Auto News & Updates",
+    author: "BYD Official Global",
+    carTag: "BYD",
+    sourceUrl: "https://www.byd.com/en",
+    readTime: "4 min read",
+    publishedDate: "2026-11-21",
+    image: "https://images.unsplash.com/photo-1617788138017-80ad40651399?auto=format&fit=crop&w=1200&q=80",
+    excerpt: "BYD expands ATTO 3 EVO across global markets alongside next-gen Blade Battery flash charging, Seal updates, and 'God's Eye' smart driving assistance.",
+    content: "Official electric mobility updates from BYD spotlight global expansion of the ATTO 3 EVO, next-generation Blade Battery engineering, and intelligent cockpit technology.\n\nEquipped with BYD's Lithium Iron Phosphate Blade Battery architecture, ATTO 3 EVO brings a 15.6-inch rotating touchscreen, 8.8-inch driver display, and up to 420 km WLTP range across Europe, Asia-Pacific, and Middle East markets.\n\nAlongside flagship BYD Seal advancements, BYD continues advancing Cell-to-Pack Blade Battery 2.0 flash charging and its 'God's Eye' smart driving assistance suite.\n\nOfficial Global Portal: https://www.byd.com/en"
   }
 ];

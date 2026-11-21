@@ -49,6 +49,13 @@ const BRAND_SOURCES = [
     name: 'Global Suzuki News',
     url: 'https://www.globalsuzuki.com/',
     badge: 'Official Global Portal'
+  },
+  {
+    id: 'byd-global',
+    brand: 'BYD',
+    name: 'BYD Official Global',
+    url: 'https://www.byd.com/en',
+    badge: 'Official EV Portal'
   }
 ];
 

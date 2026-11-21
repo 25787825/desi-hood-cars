@@ -2561,6 +2561,17 @@ const AUTO_NEWS_BRANDS = [
     tagline: 'All-New BEV e VITARA, 10M Swift & Jimny Global Updates',
     fallbackHeadline: 'Suzuki e VITARA Global BEV, ALLGRIP-e & 10M Swift Milestone',
     fallbackSummary: 'Global Suzuki announcements on HEARTECT-e electric SUVs, Swift & Jimny sales, and Technology Strategy 2026.'
+  },
+  {
+    id: 'byd-global',
+    brand: 'BYD',
+    name: 'BYD Official Global',
+    url: 'https://www.byd.com/en',
+    blogId: 'blog-news-byd',
+    accent: 'sky',
+    tagline: 'Blade Battery 2.0, ATTO 3 EVO, Seal & God\'s Eye ADAS',
+    fallbackHeadline: 'BYD ATTO 3 EVO Rollout & Next-Gen Blade Battery Updates',
+    fallbackSummary: 'Official BYD global EV announcements covering Blade Battery safety, ATTO 3 EVO, Seal, and smart driving tech.'
   }
 ];
 
