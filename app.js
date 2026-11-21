@@ -2732,21 +2732,41 @@ async function syncBrandAutoUpdates(manualTrigger = false) {
     const data = await res.json();
 
     const feeds = Array.isArray(data?.feeds) ? data.feeds : [];
+    const syncDate = (data?.fetchedAt || new Date().toISOString()).split('T')[0];
     let liveCount = 0;
     feeds.forEach(feed => {
       autoNewsFeedsCache.byId[feed.id] = feed;
-      if (feed.ok) liveCount++;
+      if (feed.ok) {
+        liveCount++;
+        const brandCfg = AUTO_NEWS_BRANDS.find(b => b.id === feed.id);
+        const matchingBlog = brandCfg ? (appState.blogs || []).find(b => b.id === brandCfg.blogId) : null;
+        if (matchingBlog) {
+          const liveTitle = (feed.headlines && feed.headlines[0]) || feed.title;
+          const liveDesc = feed.description;
+          if (liveTitle) {
+            matchingBlog.liveHeadline = liveTitle;
+            matchingBlog.liveHeadlines = feed.headlines || [];
+          }
+          if (liveDesc && liveDesc.length >= 25) {
+            matchingBlog.liveDescription = liveDesc;
+            matchingBlog.excerpt = liveDesc;
+          }
+          matchingBlog.publishedDate = syncDate;
+          matchingBlog.liveSyncedAt = data?.fetchedAt || new Date().toISOString();
+        }
+      }
     });
     autoNewsFeedsCache.syncedAt = data?.fetchedAt || new Date().toISOString();
 
     if (statusEl) {
       const timeLabel = new Date(autoNewsFeedsCache.syncedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       statusEl.textContent = liveCount > 0
-        ? `Live Connected (${liveCount}/${AUTO_NEWS_BRANDS.length}) • ${timeLabel}`
+        ? `Live Connected (${liveCount}/${AUTO_NEWS_BRANDS.length}) • Auto-Updated ${timeLabel}`
         : `${AUTO_NEWS_BRANDS.length} Official Portals Linked • ${timeLabel}`;
     }
 
-    renderBrandAutoNewsPanel();
+    saveAllState();
+    renderBlogs();
     if (manualTrigger) {
       showToast(
         'Auto News Synced',
@@ -2846,7 +2866,9 @@ function filterBlogsByCategory(category, btnEl) {
 function renderBlogs() {
   renderBrandAutoNewsPanel();
 
-  if (!autoNewsFeedsCache.hasAutoSyncedOnce && document.getElementById('view-blogs') && !document.getElementById('view-blogs').classList.contains('hidden')) {
+  const lastSyncMs = autoNewsFeedsCache.syncedAt ? new Date(autoNewsFeedsCache.syncedAt).getTime() : 0;
+  const isStale = !lastSyncMs || (Date.now() - lastSyncMs > 5 * 60 * 1000);
+  if (isStale && !autoNewsFeedsCache.isSyncing && document.getElementById('view-blogs') && !document.getElementById('view-blogs').classList.contains('hidden')) {
     syncBrandAutoUpdates(false);
   }
 
@@ -2883,7 +2905,7 @@ function renderBlogs() {
     <article class="glass-card rounded-3xl overflow-hidden border border-slate-800 flex flex-col justify-between group">
       <div>
         <div onclick="openBlogDetailModal('${blog.id}')" class="relative h-52 bg-slate-950 overflow-hidden cursor-pointer">
-          <img src="${blog.image || 'gallery/gallery-1.jpg'}" alt="${escapeHtml(blog.title)}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+          <img src="${blog.image || 'gallery/gallery-1.jpg'}" alt="${escapeHtml(blog.title)}" class="w-full h-full object-cover">
           <span class="absolute top-3 left-3 px-2.5 py-1 rounded-lg bg-slate-900/90 border border-sky-500/40 text-sky-400 text-[10px] font-extrabold uppercase tracking-wider">
             ${escapeHtml(blog.category)}
           </span>
@@ -2922,6 +2944,12 @@ function renderBlogs() {
           <p class="text-xs text-slate-400 mt-3 leading-relaxed line-clamp-3">
             ${escapeHtml(blog.excerpt)}
           </p>
+
+          ${blog.liveHeadline ? `
+            <div class="mt-2.5 p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-300 line-clamp-1">
+              <strong class="text-emerald-400">Live Headline:</strong> ${escapeHtml(blog.liveHeadline)}
+            </div>
+          ` : ''}
         </div>
       </div>
 
@@ -2955,8 +2983,20 @@ function openBlogDetailModal(blogId) {
   if (!container) return;
 
   const sourceUrl = extractBlogSourceUrl(blog);
+  const liveHeadlines = Array.isArray(blog.liveHeadlines) ? blog.liveHeadlines.filter(Boolean) : [];
   const paragraphs = (blog.content || blog.excerpt || '').split(/\n+/).filter(Boolean)
     .map(p => `<p class="text-sm text-slate-300 leading-relaxed">${escapeHtml(p)}</p>`).join("");
+  const liveBlock = liveHeadlines.length ? `
+    <div class="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 space-y-2">
+      <div class="flex items-center justify-between gap-2">
+        <span class="text-xs font-extrabold text-emerald-400 uppercase tracking-wider">Latest Auto-Updated Official Headlines</span>
+        ${blog.liveSyncedAt ? `<span class="text-[11px] text-slate-400">Synced ${escapeHtml(new Date(blog.liveSyncedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))}</span>` : ''}
+      </div>
+      <ul class="space-y-1 text-xs text-slate-200 list-disc pl-4">
+        ${liveHeadlines.map(h => `<li>${escapeHtml(h)}</li>`).join('')}
+      </ul>
+    </div>
+  ` : '';
 
   container.innerHTML = `
     <div class="relative h-64 sm:h-80 bg-slate-950 overflow-hidden rounded-t-3xl">
@@ -2986,6 +3026,7 @@ function openBlogDetailModal(blogId) {
       </div>
 
       <div class="space-y-4">
+        ${liveBlock}
         ${paragraphs}
       </div>
 
