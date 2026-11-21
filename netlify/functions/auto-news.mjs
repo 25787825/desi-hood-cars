@@ -56,6 +56,62 @@ const BRAND_SOURCES = [
     name: 'BYD Official Global',
     url: 'https://www.byd.com/en',
     badge: 'Official EV Portal'
+  },
+  {
+    id: 'gwm-global',
+    brand: 'GWM Global',
+    name: 'GWM Global News',
+    url: 'https://www.gwm-global.com/',
+    badge: 'Official Global Portal'
+  },
+  {
+    id: 'mg-pakistan',
+    brand: 'MG Motors Pakistan',
+    name: 'MG Motors Pakistan',
+    url: 'https://mgmotors.com.pk/',
+    badge: 'Official Pakistan Portal'
+  },
+  {
+    id: 'ford-global',
+    brand: 'Ford',
+    name: 'Ford Official',
+    url: 'https://www.ford.com/',
+    badge: 'Official Portal'
+  },
+  {
+    id: 'lexus-global',
+    brand: 'Lexus',
+    name: 'Lexus Official',
+    url: 'https://www.lexus.com/',
+    badge: 'Official Luxury Portal'
+  },
+  {
+    id: 'kia-global',
+    brand: 'Kia Worldwide',
+    name: 'Kia Worldwide Newsroom',
+    url: 'https://worldwide.kia.com/en/newsroom',
+    badge: 'Official Global Newsroom'
+  },
+  {
+    id: 'hyundai-nishat',
+    brand: 'Hyundai Nishat PK',
+    name: 'Hyundai Nishat Pakistan',
+    url: 'https://hyundai-nishat.com/',
+    badge: 'Official Pakistan Portal'
+  },
+  {
+    id: 'chevrolet-global',
+    brand: 'Chevrolet',
+    name: 'Chevrolet Official',
+    url: 'https://www.chevrolet.com/',
+    badge: 'Official Portal'
+  },
+  {
+    id: 'hyundai-worldwide',
+    brand: 'Hyundai Worldwide',
+    name: 'Hyundai Worldwide',
+    url: 'https://www.hyundai.com/worldwide/en',
+    badge: 'Official Global Portal'
   }
 ];
 
@@ -109,7 +165,7 @@ function extractHeadlines(html) {
 
 async function fetchBrandFeed(source) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 5500);
+  const timeout = setTimeout(() => controller.abort(), 4200);
 
   try {
     const res = await fetch(source.url, {

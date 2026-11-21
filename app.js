@@ -2572,6 +2572,94 @@ const AUTO_NEWS_BRANDS = [
     tagline: 'Blade Battery 2.0, ATTO 3 EVO, Seal & God\'s Eye ADAS',
     fallbackHeadline: 'BYD ATTO 3 EVO Rollout & Next-Gen Blade Battery Updates',
     fallbackSummary: 'Official BYD global EV announcements covering Blade Battery safety, ATTO 3 EVO, Seal, and smart driving tech.'
+  },
+  {
+    id: 'gwm-global',
+    brand: 'GWM Global',
+    name: 'GWM Global News',
+    url: 'https://www.gwm-global.com/',
+    blogId: 'blog-news-gwm',
+    accent: 'amber',
+    tagline: 'Haval Hybrids, Tank 300L Hi4-Z & Tank 500 PHEV',
+    fallbackHeadline: 'GWM Hi4 Hybrid SUVs, Tank 300L & Global NEV Rollouts',
+    fallbackSummary: 'Official Great Wall Motor updates on Haval, Tank 500 PHEV, and Hi4 off-road hybrid architecture.'
+  },
+  {
+    id: 'mg-pakistan',
+    brand: 'MG Motors Pakistan',
+    name: 'MG Motors Pakistan',
+    url: 'https://mgmotors.com.pk/',
+    blogId: 'blog-news-mg-pk',
+    accent: 'rose',
+    tagline: 'MG HS Super Hybrid PHEV (280 HP / 480 Nm) & MG Pilot',
+    fallbackHeadline: 'MG HS Super Hybrid PHEV & MG Pilot ADAS in Pakistan',
+    fallbackSummary: 'Official MG Pakistan updates on 16.6 kWh plug-in hybrid tech, 10-speed hybrid gearbox, and pricing.'
+  },
+  {
+    id: 'ford-global',
+    brand: 'Ford',
+    name: 'Ford Official',
+    url: 'https://www.ford.com/',
+    blogId: 'blog-news-ford',
+    accent: 'blue',
+    tagline: 'Bronco 60th Anniversary, F-150 Lobo & 2026 Mustang',
+    fallbackHeadline: '2026 Bronco Heritage, F-150 BlueCruise & Mustang Updates',
+    fallbackSummary: 'Official Ford news covering Bronco, F-150 Lobo, Mustang Dark Horse, and SYNC software.'
+  },
+  {
+    id: 'lexus-global',
+    brand: 'Lexus',
+    name: 'Lexus Official',
+    url: 'https://www.lexus.com/',
+    blogId: 'blog-news-lexus',
+    accent: 'amber',
+    tagline: '8th-Gen ES 350e/500e EV, GX Overtrail, LX & RZ',
+    fallbackHeadline: 'All-New Electric Lexus ES, GX Overtrail & Flagship LX',
+    fallbackSummary: 'Official Lexus updates on luxury EV sedans, twin-turbo GX off-roaders, and DIRECT4 crossovers.'
+  },
+  {
+    id: 'kia-global',
+    brand: 'Kia Worldwide',
+    name: 'Kia Worldwide Newsroom',
+    url: 'https://worldwide.kia.com/en/newsroom',
+    blogId: 'blog-news-kia',
+    accent: 'cyan',
+    tagline: 'EV3 Global Rollout, EV4 Fastback, EV9 GT & Tasman',
+    fallbackHeadline: 'Kia EV3, EV4 Production, 2026 EV9 NACS & Tasman Updates',
+    fallbackSummary: 'Global Kia press newsroom highlights on award-winning electric SUVs and utility launches.'
+  },
+  {
+    id: 'hyundai-nishat',
+    brand: 'Hyundai Nishat PK',
+    name: 'Hyundai Nishat Pakistan',
+    url: 'https://hyundai-nishat.com/',
+    blogId: 'blog-news-hyundai-pk',
+    accent: 'emerald',
+    tagline: 'Elantra Hybrid, Tucson Hybrid & Santa Fe Hybrid PK',
+    fallbackHeadline: 'Hyundai Nishat Pakistan Hybrid Lineup & Easy Own Plans',
+    fallbackSummary: 'Official Pakistan updates for Elantra Hybrid, Tucson Signature AWD, and Santa Fe Hybrid.'
+  },
+  {
+    id: 'chevrolet-global',
+    brand: 'Chevrolet',
+    name: 'Chevrolet Official',
+    url: 'https://www.chevrolet.com/',
+    blogId: 'blog-news-chevrolet',
+    accent: 'amber',
+    tagline: 'Silverado EV (440 Mi), Blazer EV SS & Corvette E-Ray',
+    fallbackHeadline: 'Chevrolet Ultium EV Lineup & Electrified Corvette E-Ray',
+    fallbackSummary: 'Official Chevy updates across Silverado EV Trail Boss, 615-hp Blazer EV SS, and Equinox EV.'
+  },
+  {
+    id: 'hyundai-worldwide',
+    brand: 'Hyundai Worldwide',
+    name: 'Hyundai Worldwide',
+    url: 'https://www.hyundai.com/worldwide/en',
+    blogId: 'blog-news-hyundai-global',
+    accent: 'sky',
+    tagline: '800V IONIQ 9 Flagship, Palisade Hybrid & Inster EV',
+    fallbackHeadline: 'Hyundai IONIQ 9 Three-Row EV, Palisade Hybrid & Inster',
+    fallbackSummary: 'Global Hyundai highlights on 110.3 kWh E-GMP flagships, V2L tech, and urban EV mobility.'
   }
 ];
 
