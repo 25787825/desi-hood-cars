@@ -1,117 +1,78 @@
-// Netlify Function: Live Auto News Metadata Fetcher for Global Automaker Portals
+// Netlify Function: Live Car Newsroom RSS Aggregator
+// Powered by Google News RSS feeds for Pakistan automotive brands & Global Vehicles
 
-const BRAND_SOURCES = [
+const NEWSROOM_FEEDS = [
   {
-    id: 'mercedes',
-    brand: 'Mercedes-Benz',
-    name: 'Mercedes-Benz Media',
-    url: 'https://media.mercedes-benz.com/',
-    badge: 'Official Media Room'
+    id: 'toyota',
+    brand: 'Toyota',
+    label: 'Toyota Pakistan',
+    rssUrl: 'https://news.google.com/rss/search?q=Toyota%20Pakistan%20cars&hl=en-PK&gl=PK&ceid=PK:en'
   },
   {
-    id: 'bmw',
-    brand: 'BMW Group',
-    name: 'BMW Group News',
-    url: 'https://www.bmwgroup.com/en.html',
-    badge: 'Official Group Portal'
+    id: 'suzuki',
+    brand: 'Suzuki',
+    label: 'Suzuki Pakistan',
+    rssUrl: 'https://news.google.com/rss/search?q=Suzuki%20Pakistan%20cars&hl=en-PK&gl=PK&ceid=PK:en'
   },
   {
-    id: 'rangerover',
-    brand: 'Range Rover',
-    name: 'Range Rover Official',
-    url: 'https://www.rangerover.com/en-xi/index.html',
-    badge: 'Official Brand Hub'
+    id: 'honda',
+    brand: 'Honda',
+    label: 'Honda Pakistan',
+    rssUrl: 'https://news.google.com/rss/search?q=Honda%20Pakistan%20cars&hl=en-PK&gl=PK&ceid=PK:en'
   },
   {
-    id: 'toyota-global',
-    brand: 'Toyota Global',
-    name: 'Toyota Global Newsroom',
-    url: 'https://global.toyota/en/',
-    badge: 'Official Global Portal'
+    id: 'kia',
+    brand: 'Kia',
+    label: 'Kia Pakistan',
+    rssUrl: 'https://news.google.com/rss/search?q=Kia%20Pakistan%20cars&hl=en-PK&gl=PK&ceid=PK:en'
   },
   {
-    id: 'toyota-indus',
-    brand: 'Toyota Indus Pakistan',
-    name: 'Toyota Indus Motor (IMC)',
-    url: 'https://toyota-indus.com/',
-    badge: 'Official Pakistan Portal'
+    id: 'hyundai',
+    brand: 'Hyundai',
+    label: 'Hyundai Pakistan',
+    rssUrl: 'https://news.google.com/rss/search?q=Hyundai%20Pakistan%20cars&hl=en-PK&gl=PK&ceid=PK:en'
   },
   {
-    id: 'honda-global',
-    brand: 'Honda Global',
-    name: 'Honda Global Newsroom',
-    url: 'https://global.honda/en/',
-    badge: 'Official Global Portal'
+    id: 'daihatsu',
+    brand: 'Daihatsu',
+    label: 'Daihatsu Pakistan',
+    rssUrl: 'https://news.google.com/rss/search?q=Daihatsu%20Pakistan%20cars&hl=en-PK&gl=PK&ceid=PK:en'
   },
   {
-    id: 'suzuki-global',
-    brand: 'Suzuki Global',
-    name: 'Global Suzuki News',
-    url: 'https://www.globalsuzuki.com/',
-    badge: 'Official Global Portal'
+    id: 'nissan',
+    brand: 'Nissan',
+    label: 'Nissan Pakistan',
+    rssUrl: 'https://news.google.com/rss/search?q=Nissan%20Pakistan%20cars&hl=en-PK&gl=PK&ceid=PK:en'
   },
   {
-    id: 'byd-global',
-    brand: 'BYD',
-    name: 'BYD Official Global',
-    url: 'https://www.byd.com/en',
-    badge: 'Official EV Portal'
+    id: 'mitsubishi',
+    brand: 'Mitsubishi',
+    label: 'Mitsubishi Pakistan',
+    rssUrl: 'https://news.google.com/rss/search?q=Mitsubishi%20Pakistan%20cars&hl=en-PK&gl=PK&ceid=PK:en'
   },
   {
-    id: 'gwm-global',
-    brand: 'GWM Global',
-    name: 'GWM Global News',
-    url: 'https://www.gwm-global.com/',
-    badge: 'Official Global Portal'
+    id: 'changan',
+    brand: 'Changan',
+    label: 'Changan Pakistan',
+    rssUrl: 'https://news.google.com/rss/search?q=Changan%20Pakistan%20cars&hl=en-PK&gl=PK&ceid=PK:en'
   },
   {
-    id: 'mg-pakistan',
-    brand: 'MG Motors Pakistan',
-    name: 'MG Motors Pakistan',
-    url: 'https://mgmotors.com.pk/',
-    badge: 'Official Pakistan Portal'
+    id: 'proton',
+    brand: 'Proton',
+    label: 'Proton Pakistan',
+    rssUrl: 'https://news.google.com/rss/search?q=Proton%20Pakistan%20cars&hl=en-PK&gl=PK&ceid=PK:en'
   },
   {
-    id: 'ford-global',
-    brand: 'Ford',
-    name: 'Ford Official',
-    url: 'https://www.ford.com/',
-    badge: 'Official Portal'
+    id: 'mg',
+    brand: 'MG',
+    label: 'MG Pakistan',
+    rssUrl: 'https://news.google.com/rss/search?q=MG%20Pakistan%20cars&hl=en-PK&gl=PK&ceid=PK:en'
   },
   {
-    id: 'lexus-global',
-    brand: 'Lexus',
-    name: 'Lexus Official',
-    url: 'https://www.lexus.com/',
-    badge: 'Official Luxury Portal'
-  },
-  {
-    id: 'kia-global',
-    brand: 'Kia Worldwide',
-    name: 'Kia Worldwide Newsroom',
-    url: 'https://worldwide.kia.com/en/newsroom',
-    badge: 'Official Global Newsroom'
-  },
-  {
-    id: 'hyundai-nishat',
-    brand: 'Hyundai Nishat PK',
-    name: 'Hyundai Nishat Pakistan',
-    url: 'https://hyundai-nishat.com/',
-    badge: 'Official Pakistan Portal'
-  },
-  {
-    id: 'chevrolet-global',
-    brand: 'Chevrolet',
-    name: 'Chevrolet Official',
-    url: 'https://www.chevrolet.com/',
-    badge: 'Official Portal'
-  },
-  {
-    id: 'hyundai-worldwide',
-    brand: 'Hyundai Worldwide',
-    name: 'Hyundai Worldwide',
-    url: 'https://www.hyundai.com/worldwide/en',
-    badge: 'Official Global Portal'
+    id: 'global-vehicles',
+    brand: 'Global Vehicles',
+    label: 'Global Auto News',
+    rssUrl: 'https://news.google.com/rss/topics/CAAqIAgKIhpDQkFTRFFvSEwyMHZNR3MwYWhJQ1pXNG9BQVAB?hl=en-US&gl=US&ceid=US%3Aen'
   }
 ];
 
@@ -131,90 +92,111 @@ function decodeHtmlEntities(str = '') {
     .trim();
 }
 
-function extractMeta(html, attrName, attrValue) {
-  const re = new RegExp(
-    `<meta[^>]+${attrName}=["']${attrValue}["'][^>]+content=["']([^"']+)["']|<meta[^>]+content=["']([^"']+)["'][^>]+${attrName}=["']${attrValue}["']`,
-    'i'
-  );
-  const match = html.match(re);
-  return decodeHtmlEntities(match ? (match[1] || match[2] || '') : '');
+function extractXmlTag(xml, tagName) {
+  const re = new RegExp(`<${tagName}[^>]*>([\\s\\S]*?)<\\/${tagName}>`, 'i');
+  const match = xml.match(re);
+  if (!match) return '';
+  return match[1].replace(/^<!\[CDATA\[([\s\S]*?)\]\]>$/i, '$1').trim();
 }
 
-function extractHeadlines(html) {
-  const titles = [];
-  const seen = new Set();
-  const re = /<(?:h1|h2|h3)[^>]*>([\s\S]*?)<\/(?:h1|h2|h3)>/gi;
-  let m;
-  while ((m = re.exec(html)) !== null && titles.length < 4) {
-    const stripped = m[1]
-      .replace(/<(?:style|script|svg)[\s\S]*?<\/(?:style|script|svg)>/gi, ' ')
-      .replace(/<[^>]+>/g, ' ');
-    const clean = decodeHtmlEntities(stripped);
-    if (
-      clean.length >= 16 &&
-      clean.length <= 160 &&
-      !/\{|\}|\.cls-|ダミー/.test(clean) &&
-      !seen.has(clean.toLowerCase())
-    ) {
-      seen.add(clean.toLowerCase());
-      titles.push(clean);
-    }
+function makeShortId(str = '') {
+  let hash = 2166136261;
+  for (let i = 0; i < str.length; i++) {
+    hash ^= str.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
   }
-  return titles;
+  return (hash >>> 0).toString(36);
 }
 
-async function fetchBrandFeed(source) {
+async function fetchRssChannel(feedCfg) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 4200);
+  const timeout = setTimeout(() => controller.abort(), 5000);
 
   try {
-    const res = await fetch(source.url, {
+    const res = await fetch(feedCfg.rssUrl, {
       signal: controller.signal,
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; DesiHoodCarsAutoNewsBot/1.0; +https://desi-hood-cars-ahmad-raza.netlify.app/)',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.9'
+        'User-Agent': 'Mozilla/5.0 (compatible; DesiHoodCarsNewsroomBot/1.0)',
+        'Accept': 'application/rss+xml, application/xml, text/xml;q=0.9, */*;q=0.8'
       }
     });
 
     if (!res.ok) {
       return {
-        ...source,
+        ...feedCfg,
         ok: false,
         status: res.status,
-        title: '',
-        description: '',
-        headlines: [],
+        items: [],
         error: `HTTP ${res.status}`
       };
     }
 
-    const html = (await res.text()).slice(0, 180000);
-    const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
-    const title = decodeHtmlEntities(titleMatch ? titleMatch[1] : '');
-    const ogTitle = extractMeta(html, 'property', 'og:title');
-    const description =
-      extractMeta(html, 'property', 'og:description') ||
-      extractMeta(html, 'name', 'description');
-    const headlines = extractHeadlines(html);
+    const xml = await res.text();
+    const items = [];
+    const itemRe = /<item>([\s\S]*?)<\/item>/gi;
+    const maxItems = feedCfg.id === 'global-vehicles' ? 6 : 4;
+    let m;
+
+    while ((m = itemRe.exec(xml)) !== null && items.length < maxItems) {
+      const block = m[1];
+      const rawTitle = decodeHtmlEntities(extractXmlTag(block, 'title'));
+      const link = decodeHtmlEntities(extractXmlTag(block, 'link'));
+      const guid = extractXmlTag(block, 'guid') || link || rawTitle;
+      const pubDateRaw = extractXmlTag(block, 'pubDate');
+      const sourceMatch = block.match(/<source[^>]*url=["']([^"']*)["'][^>]*>([\s\S]*?)<\/source>/i);
+      const sourceUrl = decodeHtmlEntities(sourceMatch ? sourceMatch[1] : '');
+      const sourceName = decodeHtmlEntities(sourceMatch ? sourceMatch[2] : 'Google News');
+
+      const title = sourceName && rawTitle.endsWith(` - ${sourceName}`)
+        ? rawTitle.slice(0, -(` - ${sourceName}`).length).trim()
+        : rawTitle;
+
+      const rawDesc = decodeHtmlEntities(extractXmlTag(block, 'description'));
+      const relatedHeadlines = [];
+      const liRe = /<a[^>]*>([\s\S]*?)<\/a>(?:\s*&nbsp;\s*<font[^>]*>([\s\S]*?)<\/font>)?/gi;
+      let lm;
+      while ((lm = liRe.exec(rawDesc)) !== null && relatedHeadlines.length < 3) {
+        const subHeadline = decodeHtmlEntities(lm[1].replace(/<[^>]+>/g, ' '));
+        const subSource = decodeHtmlEntities((lm[2] || '').replace(/<[^>]+>/g, ' '));
+        if (subHeadline && subHeadline.toLowerCase() !== title.toLowerCase()) {
+          relatedHeadlines.push(subSource ? `${subHeadline} (${subSource})` : subHeadline);
+        }
+      }
+
+      const parsedDate = pubDateRaw ? new Date(pubDateRaw) : new Date();
+      const timestamp = isNaN(parsedDate.getTime()) ? Date.now() : parsedDate.getTime();
+      const publishedDate = new Date(timestamp).toISOString().split('T')[0];
+
+      if (title && link) {
+        items.push({
+          id: `${feedCfg.id}-${makeShortId(guid)}`,
+          brandId: feedCfg.id,
+          brand: feedCfg.brand,
+          title,
+          link,
+          pubDate: pubDateRaw,
+          publishedDate,
+          timestamp,
+          sourceName,
+          sourceUrl,
+          relatedHeadlines
+        });
+      }
+    }
 
     return {
-      ...source,
+      ...feedCfg,
       ok: true,
       status: res.status,
-      title: ogTitle || title,
-      description,
-      headlines
+      items
     };
   } catch (err) {
     return {
-      ...source,
+      ...feedCfg,
       ok: false,
       status: 0,
-      title: '',
-      description: '',
-      headlines: [],
-      error: err?.name === 'AbortError' ? 'Timeout' : (err?.message || 'Fetch unavailable')
+      items: [],
+      error: err?.name === 'AbortError' ? 'Timeout' : (err?.message || 'RSS fetch failed')
     };
   } finally {
     clearTimeout(timeout);
@@ -222,15 +204,29 @@ async function fetchBrandFeed(source) {
 }
 
 export default async () => {
-  const feeds = await Promise.all(BRAND_SOURCES.map(fetchBrandFeed));
+  const channels = await Promise.all(NEWSROOM_FEEDS.map(fetchRssChannel));
+  const stories = channels
+    .flatMap(c => c.items || [])
+    .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
   return Response.json(
     {
       fetchedAt: new Date().toISOString(),
-      feeds
+      channels: channels.map(({ id, brand, label, rssUrl, ok, status, error, items }) => ({
+        id,
+        brand,
+        label,
+        rssUrl,
+        ok,
+        status,
+        error: error || '',
+        count: (items || []).length
+      })),
+      stories
     },
     {
       headers: {
-        'Cache-Control': 'public, max-age=300'
+        'Cache-Control': 'public, max-age=180'
       }
     }
   );

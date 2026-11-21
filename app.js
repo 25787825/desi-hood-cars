@@ -96,6 +96,7 @@ document.addEventListener("DOMContentLoaded", () => {
   renderDealersDirectory();
   renderSpareParts();
   renderBlogs();
+  syncBrandAutoUpdates(false);
   renderBuyerAccountView();
   updateBuyerNavLabel();
   updateOwnerNavVisibility();
@@ -298,9 +299,8 @@ function initStorage() {
     appState.parts = (!needsSync && parsedParts) ? parsedParts : [...INITIAL_PARTS];
     const defaultBlogs = typeof INITIAL_BLOGS !== 'undefined' ? INITIAL_BLOGS : [];
     if (parsedBlogs && parsedBlogs.length) {
-      const existingIds = new Set(parsedBlogs.map(b => b.id));
-      const newDefaultUpdates = defaultBlogs.filter(b => !existingIds.has(b.id) && b.id.startsWith('blog-news-'));
-      appState.blogs = newDefaultUpdates.length ? [...newDefaultUpdates, ...parsedBlogs] : parsedBlogs;
+      appState.blogs = parsedBlogs.filter(b => !String(b.id || '').startsWith('blog-news-'));
+      if (!appState.blogs.length) appState.blogs = [...defaultBlogs];
     } else {
       appState.blogs = [...defaultBlogs];
     }
@@ -2482,192 +2482,36 @@ function closeGalleryLightbox() {
 }
 
 // ==========================================
-// AUTOMOTIVE BLOGS, AUTO NEWS & SHARING ENGINE
+// AUTOMOTIVE NEWSROOM RSS & BLOGS ENGINE
 // ==========================================
-const AUTO_NEWS_BRANDS = [
-  {
-    id: 'mercedes',
-    brand: 'Mercedes-Benz',
-    name: 'Mercedes-Benz Media',
-    url: 'https://media.mercedes-benz.com/',
-    blogId: 'blog-news-mercedes',
-    accent: 'sky',
-    tagline: 'Electric GLC & 800V Electric CLA with MB.OS AI Cockpit',
-    fallbackHeadline: 'All-New Electric GLC (EQ Technology) & 800V CLA with MB.OS',
-    fallbackSummary: 'Latest global press releases covering electric SUVs, 800-volt rapid charging, and MBUX Superscreen software.'
-  },
-  {
-    id: 'bmw',
-    brand: 'BMW Group',
-    name: 'BMW Group News',
-    url: 'https://www.bmwgroup.com/en.html',
-    blogId: 'blog-news-bmw',
-    accent: 'blue',
-    tagline: 'Neue Klasse All-New BMW iX3 (805 km) & Panoramic iDrive',
-    fallbackHeadline: 'Neue Klasse BMW iX3 Debut & Panoramic iDrive Innovation',
-    fallbackSummary: 'Official BMW Group updates on 6th-gen eDrive, Debrecen EV production, and CES cabin intelligence.'
-  },
-  {
-    id: 'rangerover',
-    brand: 'Range Rover',
-    name: 'Range Rover Official',
-    url: 'https://www.rangerover.com/en-xi/index.html',
-    blogId: 'blog-news-rangerover',
-    accent: 'emerald',
-    tagline: '550 PS Range Rover Electric & SV Trim Bespoke Luxury',
-    fallbackHeadline: 'Range Rover Electric 118.5 kWh Testing & SV Bespoke Updates',
-    fallbackSummary: 'All-terrain luxury milestones including 900 mm wading depth, ThermAssist, and 2026 SV Editions.'
-  },
-  {
-    id: 'toyota-global',
-    brand: 'Toyota Global',
-    name: 'Toyota Global Newsroom',
-    url: 'https://global.toyota/en/',
-    blogId: 'blog-news-toyota-global',
-    accent: 'rose',
-    tagline: 'Land Cruiser "FJ" Series, Arene SDV Platform & New Hilux',
-    fallbackHeadline: 'Land Cruiser "FJ" Premiere, New Hilux & Arene SDV Roadmap',
-    fallbackSummary: 'Global Toyota newsroom announcements covering mobility technology, GAZOO Racing, and hybrid-EV expansion.'
-  },
-  {
-    id: 'toyota-indus',
-    brand: 'Toyota Indus Pakistan',
-    name: 'Toyota Indus Motor (IMC)',
-    url: 'https://toyota-indus.com/',
-    blogId: 'blog-news-toyota-indus',
-    accent: 'amber',
-    tagline: 'Corolla Cross HEV, Fortuner GR-S & Hilux Revo Updates',
-    fallbackHeadline: 'Corolla Cross Hybrid (HEV), Fortuner GR-S & Revo GR-S Pakistan',
-    fallbackSummary: 'Official Indus Motor Company Pakistan vehicle news, local hybrid production, and corporate milestones.'
-  },
-  {
-    id: 'honda-global',
-    brand: 'Honda Global',
-    name: 'Honda Global Newsroom',
-    url: 'https://global.honda/en/',
-    blogId: 'blog-news-honda',
-    accent: 'cyan',
-    tagline: 'All-New Hybrid Avancier SUV, 0 Series EVs & Next-Gen CR-V',
-    fallbackHeadline: 'All-New Hybrid Avancier DualPower eAWD & Honda 0 Series',
-    fallbackSummary: 'Global Honda updates on 100% hybrid CR-V plans, $3B Ohio hybrid expansion, and next-gen EV prototypes.'
-  },
-  {
-    id: 'suzuki-global',
-    brand: 'Suzuki Global',
-    name: 'Global Suzuki News',
-    url: 'https://www.globalsuzuki.com/',
-    blogId: 'blog-news-suzuki',
-    accent: 'emerald',
-    tagline: 'All-New BEV e VITARA, 10M Swift & Jimny Global Updates',
-    fallbackHeadline: 'Suzuki e VITARA Global BEV, ALLGRIP-e & 10M Swift Milestone',
-    fallbackSummary: 'Global Suzuki announcements on HEARTECT-e electric SUVs, Swift & Jimny sales, and Technology Strategy 2026.'
-  },
-  {
-    id: 'byd-global',
-    brand: 'BYD',
-    name: 'BYD Official Global',
-    url: 'https://www.byd.com/en',
-    blogId: 'blog-news-byd',
-    accent: 'sky',
-    tagline: 'Blade Battery 2.0, ATTO 3 EVO, Seal & God\'s Eye ADAS',
-    fallbackHeadline: 'BYD ATTO 3 EVO Rollout & Next-Gen Blade Battery Updates',
-    fallbackSummary: 'Official BYD global EV announcements covering Blade Battery safety, ATTO 3 EVO, Seal, and smart driving tech.'
-  },
-  {
-    id: 'gwm-global',
-    brand: 'GWM Global',
-    name: 'GWM Global News',
-    url: 'https://www.gwm-global.com/',
-    blogId: 'blog-news-gwm',
-    accent: 'amber',
-    tagline: 'Haval Hybrids, Tank 300L Hi4-Z & Tank 500 PHEV',
-    fallbackHeadline: 'GWM Hi4 Hybrid SUVs, Tank 300L & Global NEV Rollouts',
-    fallbackSummary: 'Official Great Wall Motor updates on Haval, Tank 500 PHEV, and Hi4 off-road hybrid architecture.'
-  },
-  {
-    id: 'mg-pakistan',
-    brand: 'MG Motors Pakistan',
-    name: 'MG Motors Pakistan',
-    url: 'https://mgmotors.com.pk/',
-    blogId: 'blog-news-mg-pk',
-    accent: 'rose',
-    tagline: 'MG HS Super Hybrid PHEV (280 HP / 480 Nm) & MG Pilot',
-    fallbackHeadline: 'MG HS Super Hybrid PHEV & MG Pilot ADAS in Pakistan',
-    fallbackSummary: 'Official MG Pakistan updates on 16.6 kWh plug-in hybrid tech, 10-speed hybrid gearbox, and pricing.'
-  },
-  {
-    id: 'ford-global',
-    brand: 'Ford',
-    name: 'Ford Official',
-    url: 'https://www.ford.com/',
-    blogId: 'blog-news-ford',
-    accent: 'blue',
-    tagline: 'Bronco 60th Anniversary, F-150 Lobo & 2026 Mustang',
-    fallbackHeadline: '2026 Bronco Heritage, F-150 BlueCruise & Mustang Updates',
-    fallbackSummary: 'Official Ford news covering Bronco, F-150 Lobo, Mustang Dark Horse, and SYNC software.'
-  },
-  {
-    id: 'lexus-global',
-    brand: 'Lexus',
-    name: 'Lexus Official',
-    url: 'https://www.lexus.com/',
-    blogId: 'blog-news-lexus',
-    accent: 'amber',
-    tagline: '8th-Gen ES 350e/500e EV, GX Overtrail, LX & RZ',
-    fallbackHeadline: 'All-New Electric Lexus ES, GX Overtrail & Flagship LX',
-    fallbackSummary: 'Official Lexus updates on luxury EV sedans, twin-turbo GX off-roaders, and DIRECT4 crossovers.'
-  },
-  {
-    id: 'kia-global',
-    brand: 'Kia Worldwide',
-    name: 'Kia Worldwide Newsroom',
-    url: 'https://worldwide.kia.com/en/newsroom',
-    blogId: 'blog-news-kia',
-    accent: 'cyan',
-    tagline: 'EV3 Global Rollout, EV4 Fastback, EV9 GT & Tasman',
-    fallbackHeadline: 'Kia EV3, EV4 Production, 2026 EV9 NACS & Tasman Updates',
-    fallbackSummary: 'Global Kia press newsroom highlights on award-winning electric SUVs and utility launches.'
-  },
-  {
-    id: 'hyundai-nishat',
-    brand: 'Hyundai Nishat PK',
-    name: 'Hyundai Nishat Pakistan',
-    url: 'https://hyundai-nishat.com/',
-    blogId: 'blog-news-hyundai-pk',
-    accent: 'emerald',
-    tagline: 'Elantra Hybrid, Tucson Hybrid & Santa Fe Hybrid PK',
-    fallbackHeadline: 'Hyundai Nishat Pakistan Hybrid Lineup & Easy Own Plans',
-    fallbackSummary: 'Official Pakistan updates for Elantra Hybrid, Tucson Signature AWD, and Santa Fe Hybrid.'
-  },
-  {
-    id: 'chevrolet-global',
-    brand: 'Chevrolet',
-    name: 'Chevrolet Official',
-    url: 'https://www.chevrolet.com/',
-    blogId: 'blog-news-chevrolet',
-    accent: 'amber',
-    tagline: 'Silverado EV (440 Mi), Blazer EV SS & Corvette E-Ray',
-    fallbackHeadline: 'Chevrolet Ultium EV Lineup & Electrified Corvette E-Ray',
-    fallbackSummary: 'Official Chevy updates across Silverado EV Trail Boss, 615-hp Blazer EV SS, and Equinox EV.'
-  },
-  {
-    id: 'hyundai-worldwide',
-    brand: 'Hyundai Worldwide',
-    name: 'Hyundai Worldwide',
-    url: 'https://www.hyundai.com/worldwide/en',
-    blogId: 'blog-news-hyundai-global',
-    accent: 'sky',
-    tagline: '800V IONIQ 9 Flagship, Palisade Hybrid & Inster EV',
-    fallbackHeadline: 'Hyundai IONIQ 9 Three-Row EV, Palisade Hybrid & Inster',
-    fallbackSummary: 'Global Hyundai highlights on 110.3 kWh E-GMP flagships, V2L tech, and urban EV mobility.'
-  }
-];
+function pickAutoNewsCoverImage(title = '', brandId = '', idx = 0) {
+  const t = `${brandId} ${title}`.toLowerCase();
+  if (/toyota|camry|corolla|hilux|land cruiser|fortuner|yaris/.test(t)) return 'https://images.unsplash.com/photo-1581540222194-0def2dda95b8?auto=format&fit=crop&w=1200&q=80';
+  if (/honda|civic|city|hr-v|cr-v|br-v/.test(t)) return 'https://images.unsplash.com/photo-1590362891991-f776e747a588?auto=format&fit=crop&w=1200&q=80';
+  if (/suzuki|swift|alto|cultus|wagon|jimny|vitara/.test(t)) return 'https://images.unsplash.com/photo-1609521263047-f8f205293f24?auto=format&fit=crop&w=1200&q=80';
+  if (/kia|sportage|picanto|stonic|sorento|ev3|ev6|ev9/.test(t)) return 'https://images.unsplash.com/photo-1594502184342-2e12f877aa73?auto=format&fit=crop&w=1200&q=80';
+  if (/hyundai|tucson|elantra|sonata|santa fe|ioniq|porter/.test(t)) return 'https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?auto=format&fit=crop&w=1200&q=80';
+  if (/mg|hs|zs|ev|electric|tesla|byd|battery/.test(t)) return 'https://images.unsplash.com/photo-1617788138017-80ad40651399?auto=format&fit=crop&w=1200&q=80';
+  if (/changan|alsvin|oshan|deepal|proton|saga|x70|x50/.test(t)) return 'https://images.unsplash.com/photo-1603584173870-7f23fdae1b7a?auto=format&fit=crop&w=1200&q=80';
+  if (/nissan|daihatsu|mitsubishi|pajero|outlander|mira/.test(t)) return 'https://images.unsplash.com/photo-1520031441872-265e4ff70366?auto=format&fit=crop&w=1200&q=80';
+  const fallbacks = ['gallery/car-theme-hero.jpg', 'gallery/gallery-1.jpg', 'gallery/gallery-2.jpg', 'gallery/gallery-3.jpg'];
+  return fallbacks[idx % fallbacks.length];
+}
 
-let autoNewsFeedsCache = {
+function getDeletedBlogIds() {
+  try {
+    return new Set(JSON.parse(localStorage.getItem('desihood_deleted_blog_ids') || '[]'));
+  } catch (e) {
+    return new Set();
+  }
+}
+
+let newsroomState = {
   syncedAt: null,
   isSyncing: false,
-  hasAutoSyncedOnce: false,
-  byId: {}
+  activeBrand: 'all',
+  channels: [],
+  stories: []
 };
 
 function extractBlogSourceUrl(blog) {
@@ -2766,44 +2610,17 @@ function shareBlogToFacebook(blogId) {
   );
 }
 
-async function shareBrandFeedUpdate(brandId) {
-  const brandCfg = AUTO_NEWS_BRANDS.find(b => b.id === brandId);
-  if (!brandCfg) return;
-  const live = autoNewsFeedsCache.byId[brandId];
-  const headline = (live?.headlines && live.headlines[0]) || live?.title || brandCfg.fallbackHeadline;
-  const shareText = `${brandCfg.brand} Auto Update: ${headline}\n\nOfficial Link: ${brandCfg.url}\nShared via Desi Hood Cars by AHMAD RAZA`;
-  if (navigator.share) {
-    try {
-      await navigator.share({
-        title: `${brandCfg.brand} Official Auto Update`,
-        text: shareText,
-        url: brandCfg.url
-      });
-      return;
-    } catch (err) {
-      if (err?.name === 'AbortError') return;
-    }
-  }
-  await copyShareText(shareText, `${brandCfg.brand} update`);
-}
-
-function shareBrandFeedWhatsApp(brandId) {
-  const brandCfg = AUTO_NEWS_BRANDS.find(b => b.id === brandId);
-  if (!brandCfg) return;
-  const live = autoNewsFeedsCache.byId[brandId];
-  const headline = (live?.headlines && live.headlines[0]) || live?.title || brandCfg.fallbackHeadline;
-  const shareText = `${brandCfg.brand} Auto Update: ${headline}\nOfficial Portal: ${brandCfg.url}\nDesi Hood Cars News`;
-  window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, '_blank', 'noopener,noreferrer');
-}
-
 async function shareAllAutoUpdates() {
   const pageUrl = `${window.location.origin}${window.location.pathname}`;
-  const summaryLines = AUTO_NEWS_BRANDS.map(b => `• ${b.brand}: ${b.url}`).join('\n');
-  const fullText = `Latest Official Auto News & Car Blogs on Desi Hood Cars:\n\n${summaryLines}\n\nExplore & Share: ${pageUrl}`;
+  const topStories = (newsroomState.stories || []).slice(0, 5);
+  const summaryLines = topStories.length
+    ? topStories.map(s => `• [${s.brand}] ${s.title}`).join('\n')
+    : 'Live RSS news updates for Toyota, Suzuki, Honda, Kia, Hyundai, Daihatsu, Nissan, Mitsubishi, Changan, Proton & MG Pakistan.';
+  const fullText = `Desi Hood Cars Live Car Newsroom:\n\n${summaryLines}\n\nRead & Share: ${pageUrl}`;
   if (navigator.share) {
     try {
       await navigator.share({
-        title: 'Desi Hood Cars — Car Blogs & Official Auto News',
+        title: 'Desi Hood Cars — Live Car Newsroom',
         text: fullText,
         url: pageUrl
       });
@@ -2812,17 +2629,16 @@ async function shareAllAutoUpdates() {
       if (err?.name === 'AbortError') return;
     }
   }
-  await copyShareText(fullText, 'All official auto news links');
+  await copyShareText(fullText, 'Live Newsroom updates');
 }
 
 async function syncBrandAutoUpdates(manualTrigger = false) {
-  if (autoNewsFeedsCache.isSyncing) return;
-  autoNewsFeedsCache.isSyncing = true;
-  autoNewsFeedsCache.hasAutoSyncedOnce = true;
+  if (newsroomState.isSyncing) return;
+  newsroomState.isSyncing = true;
 
-  const statusEl = document.getElementById('auto-news-sync-status');
+  const statusEl = document.getElementById('newsroom-sync-status');
   const syncBtn = document.getElementById('btn-sync-auto-news');
-  if (statusEl) statusEl.textContent = 'Syncing Official Newsrooms...';
+  if (statusEl) statusEl.textContent = 'Syncing 12 Live RSS Feeds...';
   if (syncBtn) syncBtn.disabled = true;
 
   try {
@@ -2830,116 +2646,172 @@ async function syncBrandAutoUpdates(manualTrigger = false) {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
 
-    const feeds = Array.isArray(data?.feeds) ? data.feeds : [];
+    const channels = Array.isArray(data?.channels) ? data.channels : [];
+    const stories = Array.isArray(data?.stories) ? data.stories : [];
     const syncDate = (data?.fetchedAt || new Date().toISOString()).split('T')[0];
-    let liveCount = 0;
-    feeds.forEach(feed => {
-      autoNewsFeedsCache.byId[feed.id] = feed;
-      if (feed.ok) {
-        liveCount++;
-        const brandCfg = AUTO_NEWS_BRANDS.find(b => b.id === feed.id);
-        const matchingBlog = brandCfg ? (appState.blogs || []).find(b => b.id === brandCfg.blogId) : null;
-        if (matchingBlog) {
-          const liveTitle = (feed.headlines && feed.headlines[0]) || feed.title;
-          const liveDesc = feed.description;
-          if (liveTitle) {
-            matchingBlog.liveHeadline = liveTitle;
-            matchingBlog.liveHeadlines = feed.headlines || [];
-          }
-          if (liveDesc && liveDesc.length >= 25) {
-            matchingBlog.liveDescription = liveDesc;
-            matchingBlog.excerpt = liveDesc;
-          }
-          matchingBlog.publishedDate = syncDate;
-          matchingBlog.liveSyncedAt = data?.fetchedAt || new Date().toISOString();
-        }
-      }
-    });
-    autoNewsFeedsCache.syncedAt = data?.fetchedAt || new Date().toISOString();
 
+    newsroomState.syncedAt = data?.fetchedAt || new Date().toISOString();
+    newsroomState.channels = channels;
+    newsroomState.stories = stories;
+
+    let addedCount = 0;
+    if (stories.length) {
+      const deletedIds = getDeletedBlogIds();
+      const nonNewsBlogs = (appState.blogs || []).filter(b => {
+        const id = String(b.id || '');
+        return !id.startsWith('blog-news-') && !id.startsWith('gnews-');
+      });
+      const existingById = new Map(nonNewsBlogs.map(b => [b.id, b]));
+      const newlyUploaded = [];
+
+      // Keep top 24 newest RSS stories uploaded into Car News & Blogs
+      stories.slice(0, 24).forEach((item, idx) => {
+        const rssBlogId = `rss-${item.id}`;
+        if (deletedIds.has(rssBlogId)) return;
+
+        const relatedLines = (item.relatedHeadlines || []).map(h => `• ${h}`).join('\n');
+        const contentBody = [
+          `Brand Beat: ${item.brand} | Publisher: ${item.sourceName || 'Google News'}`,
+          relatedLines ? `Related Coverage:\n${relatedLines}` : '',
+          `Original News Link: ${item.link}`
+        ].filter(Boolean).join('\n\n');
+
+        const excerptText = (item.relatedHeadlines && item.relatedHeadlines[0])
+          ? `${item.brand} News (${item.sourceName}): ${item.relatedHeadlines[0]}`
+          : `Latest ${item.brand} news update covered by ${item.sourceName || 'Google News'}.`;
+
+        if (!existingById.has(rssBlogId)) {
+          addedCount++;
+          newlyUploaded.push({
+            id: rssBlogId,
+            title: item.title,
+            category: 'Auto News & Updates',
+            author: item.sourceName || `${item.brand} News`,
+            carTag: item.brand,
+            sourceUrl: item.link,
+            readTime: 'Live RSS',
+            publishedDate: item.publishedDate || syncDate,
+            image: pickAutoNewsCoverImage(item.title, item.brandId, idx),
+            excerpt: excerptText,
+            content: contentBody,
+            liveHeadlines: item.relatedHeadlines || [],
+            liveSyncedAt: newsroomState.syncedAt
+          });
+        } else {
+          const existing = existingById.get(rssBlogId);
+          existing.liveSyncedAt = newsroomState.syncedAt;
+          existing.sourceUrl = item.link;
+        }
+      });
+
+      const retainedBlogs = nonNewsBlogs.filter(b => !String(b.id || '').startsWith('rss-'));
+      const currentRssBlogs = nonNewsBlogs.filter(b => String(b.id || '').startsWith('rss-'));
+      const mergedRss = [...newlyUploaded, ...currentRssBlogs].slice(0, 24);
+      appState.blogs = [...mergedRss, ...retainedBlogs];
+    }
+
+    const okChannels = channels.filter(c => c.ok).length;
     if (statusEl) {
-      const timeLabel = new Date(autoNewsFeedsCache.syncedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      statusEl.textContent = liveCount > 0
-        ? `Live Connected (${liveCount}/${AUTO_NEWS_BRANDS.length}) • Auto-Updated ${timeLabel}`
-        : `${AUTO_NEWS_BRANDS.length} Official Portals Linked • ${timeLabel}`;
+      const timeLabel = new Date(newsroomState.syncedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      statusEl.textContent = `${stories.length} Stories (${okChannels}/${channels.length} Feeds) • ${timeLabel}`;
     }
 
     saveAllState();
     renderBlogs();
     if (manualTrigger) {
-      showToast(
-        'Auto News Synced',
-        liveCount > 0
-          ? `Fetched live metadata from ${liveCount} official brand newsrooms.`
-          : 'Loaded verified official newsroom portals & latest curated summaries.',
-        'success'
-      );
+      showToast('Newsroom Updated', `Synced ${stories.length} latest car news stories across ${okChannels} RSS feeds (${addedCount} new).`, 'success');
     }
   } catch (err) {
-    if (statusEl) statusEl.textContent = `${AUTO_NEWS_BRANDS.length} Official Portals Linked (Verified Mode)`;
-    renderBrandAutoNewsPanel();
+    if (statusEl) statusEl.textContent = 'RSS Sync Retry Needed';
+    renderNewsroom();
     if (manualTrigger) {
-      showToast('Official Portals Ready', 'Showing verified brand updates & direct official portal links.', 'info');
+      showToast('RSS Unavailable', 'Could not reach live RSS feeds right now. Try Refresh Newsroom in a moment.', 'warning');
     }
   } finally {
-    autoNewsFeedsCache.isSyncing = false;
+    newsroomState.isSyncing = false;
     if (syncBtn) syncBtn.disabled = false;
   }
 }
 
-function renderBrandAutoNewsPanel() {
-  const grid = document.getElementById('brand-auto-news-grid');
+function filterNewsroomByBrand(brandId, btnEl) {
+  newsroomState.activeBrand = brandId;
+  document.querySelectorAll('.newsroom-brand-btn').forEach(btn => {
+    btn.className = 'newsroom-brand-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 border border-slate-800 hover:border-slate-700 transition-colors';
+  });
+  if (btnEl) {
+    btnEl.className = 'newsroom-brand-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950 transition-colors';
+  }
+  renderNewsroom();
+}
+
+function renderNewsroom() {
+  const grid = document.getElementById('newsroom-grid');
   if (!grid) return;
 
-  grid.innerHTML = AUTO_NEWS_BRANDS.map(brandCfg => {
-    const live = autoNewsFeedsCache.byId[brandCfg.id];
-    const hasLive = Boolean(live && live.ok);
-    const headline = (live?.headlines && live.headlines[0]) || live?.title || brandCfg.fallbackHeadline;
-    const summary = live?.description || brandCfg.fallbackSummary;
-    const extraHeadlines = (live?.headlines || []).slice(1, 3);
-    const matchingBlog = (appState.blogs || []).find(b => b.id === brandCfg.blogId);
+  const brandFilter = newsroomState.activeBrand || 'all';
+  const filtered = (newsroomState.stories || []).filter(s => brandFilter === 'all' || s.brandId === brandFilter);
 
+  if (!newsroomState.stories.length) {
+    grid.innerHTML = `
+      <div class="col-span-full p-5 rounded-2xl bg-slate-900/75 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <p class="text-xs text-slate-300">${newsroomState.isSyncing ? 'Fetching live car news from Toyota, Suzuki, Honda, Kia, Hyundai, Daihatsu, Nissan, Mitsubishi, Changan, Proton & MG RSS...' : 'Click Refresh Newsroom to fetch the latest breaking car news from all RSS feeds.'}</p>
+        <button onclick="syncBrandAutoUpdates(true)" class="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold shrink-0">
+          Refresh Newsroom
+        </button>
+      </div>
+    `;
+    return;
+  }
+
+  if (!filtered.length) {
+    grid.innerHTML = `
+      <div class="col-span-full p-5 rounded-2xl bg-slate-900/75 border border-slate-800 text-center text-xs text-slate-400">
+        No recent RSS stories matched this brand filter yet. Try "All Brands" or click Refresh Newsroom.
+      </div>
+    `;
+    return;
+  }
+
+  grid.innerHTML = filtered.slice(0, 12).map(item => {
+    const blogId = `rss-${item.id}`;
     return `
-      <div class="rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-amber-500/40 p-4 flex flex-col justify-between transition-all">
+      <div class="rounded-2xl bg-slate-900/85 border border-slate-800 hover:border-emerald-500/40 p-4 flex flex-col justify-between transition-colors">
         <div>
-          <div class="flex items-center justify-between gap-2 mb-2.5">
-            <span class="px-2.5 py-0.5 rounded-md bg-slate-950 border border-slate-700 text-amber-400 text-[10px] font-extrabold uppercase tracking-wider">
-              ${escapeHtml(brandCfg.brand)}
-            </span>
-            <span class="text-[10px] font-semibold ${hasLive ? 'text-emerald-400' : 'text-sky-400'} flex items-center space-x-1">
-              <span class="w-1.5 h-1.5 rounded-full ${hasLive ? 'bg-emerald-400' : 'bg-sky-400'}"></span>
-              <span>${hasLive ? 'Live Feed' : 'Official Link'}</span>
-            </span>
+          <div class="flex items-center justify-between gap-2 mb-2">
+            <div class="flex items-center gap-1.5 min-w-0">
+              <span class="px-2 py-0.5 rounded bg-amber-500/15 border border-amber-500/30 text-amber-400 text-[10px] font-extrabold uppercase shrink-0">
+                ${escapeHtml(item.brand)}
+              </span>
+              <span class="px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-semibold truncate">
+                ${escapeHtml(item.sourceName || 'News')}
+              </span>
+            </div>
+            <span class="text-[10px] text-slate-400 shrink-0">${escapeHtml(item.publishedDate || '')}</span>
           </div>
 
-          <h4 class="text-sm font-extrabold text-white leading-snug line-clamp-2">
-            ${escapeHtml(headline)}
+          <h4 onclick="openBlogDetailModal('${blogId}')" class="text-xs sm:text-sm font-extrabold text-white hover:text-amber-400 cursor-pointer leading-snug line-clamp-2">
+            ${escapeHtml(item.title)}
           </h4>
-          <p class="text-[11px] text-slate-400 mt-1.5 leading-relaxed line-clamp-2">
-            ${escapeHtml(summary)}
-          </p>
 
-          ${extraHeadlines.length ? `
-            <ul class="mt-2.5 space-y-1 border-t border-slate-800/80 pt-2">
-              ${extraHeadlines.map(h => `<li class="text-[10px] text-slate-300 truncate">&bull; ${escapeHtml(h)}</li>`).join('')}
-            </ul>
+          ${(item.relatedHeadlines && item.relatedHeadlines.length) ? `
+            <p class="text-[11px] text-slate-400 mt-1.5 line-clamp-1">
+              ${escapeHtml(item.relatedHeadlines[0])}
+            </p>
           ` : ''}
         </div>
 
-        <div class="mt-4 pt-3 border-t border-slate-800/70 flex flex-wrap items-center gap-1.5">
-          ${matchingBlog ? `
-            <button onclick="openBlogDetailModal('${matchingBlog.id}')" class="flex-1 px-2.5 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500 text-amber-400 hover:text-slate-950 border border-amber-500/30 text-[11px] font-bold transition-colors">
-              Full Brief
-            </button>
-          ` : ''}
-          <a href="${escapeHtml(brandCfg.url)}" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1.5 rounded-lg bg-slate-950 hover:bg-slate-800 text-sky-400 border border-slate-700 text-[11px] font-bold inline-flex items-center space-x-1 transition-colors">
-            <span>Official</span>
+        <div class="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center gap-1.5">
+          <button onclick="openBlogDetailModal('${blogId}')" class="flex-1 px-2.5 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500 text-amber-400 hover:text-slate-950 border border-amber-500/30 text-[11px] font-bold transition-colors">
+            Read &amp; Share
+          </button>
+          <a href="${escapeHtml(item.link)}" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1.5 rounded-lg bg-slate-950 hover:bg-slate-800 text-sky-400 border border-slate-700 text-[11px] font-bold inline-flex items-center space-x-1">
+            <span>Story</span>
             <i data-lucide="external-link" class="w-3 h-3"></i>
           </a>
-          <button onclick="shareBrandFeedWhatsApp('${brandCfg.id}')" title="Share on WhatsApp" class="p-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500 text-emerald-400 hover:text-slate-950 border border-emerald-500/30 transition-colors">
+          <button onclick="shareBlogToWhatsApp('${blogId}')" title="Share on WhatsApp" class="p-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500 text-emerald-400 hover:text-slate-950 border border-emerald-500/30 transition-colors">
             <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>
           </button>
-          <button onclick="shareBrandFeedUpdate('${brandCfg.id}')" title="Share / Copy Update" class="p-1.5 rounded-lg bg-slate-800 hover:bg-sky-500 text-slate-300 hover:text-slate-950 border border-slate-700 transition-colors">
+          <button onclick="shareBlogPost('${blogId}')" title="Share / Copy" class="p-1.5 rounded-lg bg-slate-800 hover:bg-sky-500 text-slate-300 hover:text-slate-950 border border-slate-700 transition-colors">
             <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
           </button>
         </div>
@@ -2963,11 +2835,11 @@ function filterBlogsByCategory(category, btnEl) {
 }
 
 function renderBlogs() {
-  renderBrandAutoNewsPanel();
+  renderNewsroom();
 
-  const lastSyncMs = autoNewsFeedsCache.syncedAt ? new Date(autoNewsFeedsCache.syncedAt).getTime() : 0;
-  const isStale = !lastSyncMs || (Date.now() - lastSyncMs > 5 * 60 * 1000);
-  if (isStale && !autoNewsFeedsCache.isSyncing && document.getElementById('view-blogs') && !document.getElementById('view-blogs').classList.contains('hidden')) {
+  const lastSyncMs = newsroomState.syncedAt ? new Date(newsroomState.syncedAt).getTime() : 0;
+  const isStale = !lastSyncMs || (Date.now() - lastSyncMs > 3 * 60 * 1000);
+  if (isStale && !newsroomState.isSyncing && document.getElementById('view-blogs') && !document.getElementById('view-blogs').classList.contains('hidden')) {
     syncBrandAutoUpdates(false);
   }
 
@@ -3243,6 +3115,11 @@ function handleBlogUploadSubmit(e) {
 
 function deleteBlogPost(blogId) {
   if (confirm("Remove this blog post from the Car Blogs & News page?")) {
+    if (String(blogId || '').startsWith('rss-') || String(blogId || '').startsWith('gnews-')) {
+      const deleted = getDeletedBlogIds();
+      deleted.add(blogId);
+      localStorage.setItem('desihood_deleted_blog_ids', JSON.stringify([...deleted]));
+    }
     appState.blogs = (appState.blogs || []).filter(b => b.id !== blogId);
     saveAllState();
     if (typeof sbDeleteRecord === "function") sbDeleteRecord("blogs", blogId);

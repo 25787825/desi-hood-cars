@@ -1764,45 +1764,62 @@
         <div>
           <div class="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-400 text-xs font-semibold uppercase tracking-wider mb-3">
             <i data-lucide="newspaper" class="w-4 h-4"></i>
-            <span>Desi Hood Cars Editorial, Brand Feeds &amp; Auto News</span>
+            <span>Desi Hood Cars Live RSS Newsroom &amp; Blogs</span>
           </div>
-          <h2 class="text-3xl sm:text-4xl font-extrabold text-white heading-font">Car Blogs &amp; Auto News</h2>
-          <p class="text-slate-400 mt-2 text-sm max-w-2xl">Share and explore all new automotive updates, official global brand press releases (Mercedes-Benz, BMW, Range Rover, Toyota, Honda, Suzuki, BYD, GWM, MG, Ford, Lexus, Kia, Hyundai, Chevrolet), expert reviews, and EV guides.</p>
+          <h2 class="text-3xl sm:text-4xl font-extrabold text-white heading-font">Car Newsroom &amp; Auto Blogs</h2>
+          <p class="text-slate-400 mt-2 text-sm max-w-2xl">Real-time automotive newsroom powered by live RSS feeds for Toyota, Suzuki, Honda, Kia, Hyundai, Daihatsu, Nissan, Mitsubishi, Changan, Proton, MG, and Global Vehicles.</p>
         </div>
 
         <div class="flex flex-wrap items-center gap-2.5 shrink-0">
           <button onclick="syncBrandAutoUpdates(true)" id="btn-sync-auto-news" class="inline-flex items-center space-x-2 px-4 py-3 rounded-xl bg-sky-500/15 hover:bg-sky-500 text-sky-400 hover:text-slate-950 border border-sky-500/30 font-extrabold text-xs uppercase tracking-wider transition-all">
             <i data-lucide="refresh-cw" class="w-4 h-4"></i>
-            <span>Sync Live Auto News</span>
+            <span>Refresh Newsroom</span>
           </button>
           <button onclick="shareAllAutoUpdates()" class="inline-flex items-center space-x-2 px-4 py-3 rounded-xl bg-emerald-500/15 hover:bg-emerald-500 text-emerald-400 hover:text-slate-950 border border-emerald-500/30 font-extrabold text-xs uppercase tracking-wider transition-all">
             <i data-lucide="share-2" class="w-4 h-4"></i>
-            <span>Share Updates</span>
+            <span>Share Newsroom</span>
           </button>
           <button onclick="openBlogUploadModal()" class="inline-flex items-center space-x-2 px-5 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs uppercase tracking-wider btn-primary-glow transition-all">
             <i data-lucide="plus-circle" class="w-4 h-4"></i>
-            <span>Upload / Share Update</span>
+            <span>Upload Car Blog</span>
           </button>
         </div>
       </div>
 
-      <!-- Official Brand Auto-News & Live Updates Hub -->
-      <div id="brand-auto-news-panel" class="glass-panel rounded-3xl p-5 sm:p-6 border border-slate-800/90 mb-8">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 pb-4 border-b border-slate-800/80">
+      <!-- NEW: Live RSS Car Newsroom -->
+      <div id="newsroom-section" class="glass-panel rounded-3xl p-5 sm:p-6 border border-emerald-500/30 mb-8">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-4 border-b border-slate-800/80">
           <div>
             <div class="flex items-center space-x-2">
-              <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-              <h3 class="text-lg sm:text-xl font-extrabold text-white heading-font">Official Manufacturer Newsrooms &amp; Live Auto Updates</h3>
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+              <h3 class="text-lg sm:text-xl font-extrabold text-white heading-font">Live Pakistan &amp; Global Car Newsroom</h3>
             </div>
-            <p class="text-xs text-slate-400 mt-1">Direct official automaker feeds from Mercedes-Benz, BMW, Range Rover, Toyota, Honda, Suzuki, BYD, GWM, MG Pakistan, Ford, Lexus, Kia, Hyundai, and Chevrolet — auto-updated from official portals.</p>
+            <p class="text-xs text-slate-400 mt-1">Automatically updated with latest breaking stories from Toyota, Suzuki, Honda, Kia, Hyundai, Daihatsu, Nissan, Mitsubishi, Changan, Proton, MG &amp; Global Vehicles RSS.</p>
           </div>
-          <span id="auto-news-sync-status" class="text-[11px] font-semibold px-3 py-1.5 rounded-full bg-slate-900 border border-slate-700 text-slate-300 shrink-0">
-            16 Official Brands Connected
+          <span id="newsroom-sync-status" class="text-[11px] font-bold px-3 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 shrink-0">
+            Syncing Live RSS Feeds...
           </span>
         </div>
 
-        <div id="brand-auto-news-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <!-- Populated dynamically by app.js -->
+        <!-- Brand RSS Filter Pills -->
+        <div class="flex flex-wrap items-center gap-1.5 mb-5" id="newsroom-brand-pills">
+          <button onclick="filterNewsroomByBrand('all', this)" class="newsroom-brand-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950 transition-colors">All Brands</button>
+          <button onclick="filterNewsroomByBrand('toyota', this)" class="newsroom-brand-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 border border-slate-800 hover:border-slate-700 transition-colors">Toyota</button>
+          <button onclick="filterNewsroomByBrand('suzuki', this)" class="newsroom-brand-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 border border-slate-800 hover:border-slate-700 transition-colors">Suzuki</button>
+          <button onclick="filterNewsroomByBrand('honda', this)" class="newsroom-brand-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 border border-slate-800 hover:border-slate-700 transition-colors">Honda</button>
+          <button onclick="filterNewsroomByBrand('kia', this)" class="newsroom-brand-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 border border-slate-800 hover:border-slate-700 transition-colors">Kia</button>
+          <button onclick="filterNewsroomByBrand('hyundai', this)" class="newsroom-brand-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 border border-slate-800 hover:border-slate-700 transition-colors">Hyundai</button>
+          <button onclick="filterNewsroomByBrand('daihatsu', this)" class="newsroom-brand-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 border border-slate-800 hover:border-slate-700 transition-colors">Daihatsu</button>
+          <button onclick="filterNewsroomByBrand('nissan', this)" class="newsroom-brand-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 border border-slate-800 hover:border-slate-700 transition-colors">Nissan</button>
+          <button onclick="filterNewsroomByBrand('mitsubishi', this)" class="newsroom-brand-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 border border-slate-800 hover:border-slate-700 transition-colors">Mitsubishi</button>
+          <button onclick="filterNewsroomByBrand('changan', this)" class="newsroom-brand-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 border border-slate-800 hover:border-slate-700 transition-colors">Changan</button>
+          <button onclick="filterNewsroomByBrand('proton', this)" class="newsroom-brand-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 border border-slate-800 hover:border-slate-700 transition-colors">Proton</button>
+          <button onclick="filterNewsroomByBrand('mg', this)" class="newsroom-brand-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 border border-slate-800 hover:border-slate-700 transition-colors">MG</button>
+          <button onclick="filterNewsroomByBrand('global-vehicles', this)" class="newsroom-brand-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 border border-slate-800 hover:border-slate-700 transition-colors">Global Vehicles</button>
+        </div>
+
+        <div id="newsroom-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <!-- Populated dynamically from live Google News RSS via /.netlify/functions/auto-news -->
         </div>
       </div>
 
