@@ -1,0 +1,14 @@
+{
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "netlify.toml",
+      "vercel.json",
+      "server.ps1",
+      "supabase-schema.sql",
+      "**/.*",
+      "**/node_modules/**"
+    ]
+  }
+}
