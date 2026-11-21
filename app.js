@@ -97,6 +97,7 @@ document.addEventListener("DOMContentLoaded", () => {
   renderSpareParts();
   renderBlogs();
   syncBrandAutoUpdates(false);
+  loadNewCarsPage(false);
   renderBuyerAccountView();
   updateBuyerNavLabel();
   updateOwnerNavVisibility();
@@ -202,6 +203,7 @@ function changeCountryLocation(countryCode) {
   showToast(`${info.flag} ${info.name}`, `Showing ${info.name} dealers & cars in ${curLabel}`, "info");
 
   renderMarketplace();
+  renderNewCarsView();
   renderDealersDirectory();
   renderSpareParts();
   renderDealerPortal();
@@ -218,6 +220,7 @@ function changeGlobalCurrency(currCode) {
   showToast("Currency Changed", `All prices converted to ${CURRENCIES[currCode].label}`, "info");
 
   renderMarketplace();
+  renderNewCarsView();
   renderDealersDirectory();
   renderSpareParts();
   renderDealerPortal();
@@ -355,6 +358,7 @@ function switchView(viewName) {
 
   const views = [
     { id: 'marketplace', el: document.getElementById('view-marketplace'), btn: document.getElementById('nav-btn-marketplace') },
+    { id: 'new-cars', el: document.getElementById('view-new-cars'), btn: document.getElementById('nav-btn-new-cars') },
     { id: 'old-cars', el: document.getElementById('view-old-cars'), btn: document.getElementById('nav-btn-old-cars') },
     { id: 'browse-more', el: document.getElementById('view-browse-more'), btn: document.getElementById('nav-btn-browse-more') },
     { id: 'gallery', el: document.getElementById('view-gallery'), btn: document.getElementById('nav-btn-gallery') },
@@ -397,6 +401,7 @@ function switchView(viewName) {
   }
 
   if (viewName === 'marketplace') renderMarketplace();
+  else if (viewName === 'new-cars') renderNewCarsView();
   else if (viewName === 'old-cars') renderOldCarsSection();
   else if (viewName === 'browse-more') renderBrowseMoreHub();
   else if (viewName === 'blogs') renderBlogs();
@@ -4588,4 +4593,344 @@ function handleBikeSubmit(e) {
   e.target.reset();
   renderUsedBikes();
   showToast("Used Bike Listed!", "Your bike listing with KM & working condition is live.", "success");
+}
+
+// ==========================================
+// NEW CARS PAGE (2024-2026) & LIVE FX API ENGINE
+// ==========================================
+const NEW_CARS_CURRENCIES = {
+  PKR: { symbol: 'Rs ', label: 'PKR', name: 'Pakistani Rupee' },
+  USD: { symbol: '$', label: 'USD', name: 'US Dollar' },
+  AED: { symbol: 'AED ', label: 'AED', name: 'UAE Dirham' },
+  EUR: { symbol: '€', label: 'EUR', name: 'Euro' }
+};
+
+let newCarsState = {
+  currency: localStorage.getItem('desihood_newcars_currency') || null,
+  yearFilter: 'all',
+  isLoading: false,
+  syncedAt: null,
+  liveRatesOk: false,
+  detectedCountry: 'PK',
+  rates: {
+    USD: 1,
+    PKR: CURRENCIES?.PKR?.rate || 278.5,
+    AED: CURRENCIES?.AED?.rate || 3.6725,
+    EUR: CURRENCIES?.EUR?.rate || 0.92
+  },
+  apiCars: []
+};
+
+function getEffectiveNewCarsCurrency() {
+  if (newCarsState.currency && NEW_CARS_CURRENCIES[newCarsState.currency]) {
+    return newCarsState.currency;
+  }
+  const country = appState.currentCountry;
+  if (country === 'PK') return 'PKR';
+  if (country === 'AE') return 'AED';
+  if (country === 'US') return 'USD';
+  if (country === 'EU' || country === 'DE' || country === 'FR') return 'EUR';
+  const cur = appState.currentCurrency;
+  if (NEW_CARS_CURRENCIES[cur]) return cur;
+  return 'PKR';
+}
+
+function selectNewCarsCurrency(currCode) {
+  if (!NEW_CARS_CURRENCIES[currCode]) return;
+  newCarsState.currency = currCode;
+  localStorage.setItem('desihood_newcars_currency', currCode);
+
+  if (CURRENCIES[currCode]) {
+    appState.currentCurrency = currCode;
+    localStorage.setItem('desihood_currency', currCode);
+  }
+
+  renderNewCarsView();
+  showToast(
+    `Currency: ${currCode}`,
+    `All New Cars prices converted using live ${currCode} exchange rate.`,
+    'success'
+  );
+}
+
+function filterNewCarsYear(yearVal, btnEl) {
+  newCarsState.yearFilter = yearVal;
+  document.querySelectorAll('.new-cars-year-btn').forEach(btn => {
+    btn.className = 'new-cars-year-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 border border-slate-800 hover:border-slate-700 transition-colors';
+  });
+  if (btnEl) {
+    btnEl.className = 'new-cars-year-btn px-3.5 py-1.5 rounded-lg text-xs font-bold bg-amber-500 text-slate-950 transition-colors';
+  }
+  renderNewCarsView();
+}
+
+function formatNewCarPrice(usdPrice, currCode) {
+  const numUsd = Number(usdPrice || 0);
+  if (!numUsd || isNaN(numUsd)) return 'Price on Request';
+  const rate = newCarsState.rates[currCode] || CURRENCIES[currCode]?.rate || 1;
+  const meta = NEW_CARS_CURRENCIES[currCode] || NEW_CARS_CURRENCIES.USD;
+  const converted = Math.round(numUsd * rate);
+  return `${meta.symbol}${formatNumber(converted)}`;
+}
+
+function pickApiCarPhoto(make = '', model = '', idx = 0) {
+  const t = `${make} ${model}`.toLowerCase();
+  if (/porsche|gt3|911/.test(t)) return 'https://images.unsplash.com/photo-1614162692292-7ac56d7f7f1e?auto=format&fit=crop&w=1200&q=80';
+  if (/mercedes|amg/.test(t)) return 'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&w=1200&q=80';
+  if (/bmw|z4|m3|m4/.test(t)) return 'https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&w=1200&q=80';
+  if (/audi|rs/.test(t)) return 'https://images.unsplash.com/photo-1603584173870-7f23fdae1b7a?auto=format&fit=crop&w=1200&q=80';
+  if (/toyota|supra|camry|corolla|land cruiser/.test(t)) return 'https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?auto=format&fit=crop&w=1200&q=80';
+  if (/honda|pilot|civic|accord/.test(t)) return 'https://images.unsplash.com/photo-1590362891991-f776e747a588?auto=format&fit=crop&w=1200&q=80';
+  if (/ford|mustang|bronco|f-150/.test(t)) return 'https://images.unsplash.com/photo-1558441719-74e1d1f03fce?auto=format&fit=crop&w=1200&q=80';
+  if (/chevrolet|corvette|camaro/.test(t)) return 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=1200&q=80';
+  if (/jaguar|f-type|lexus/.test(t)) return 'https://images.unsplash.com/photo-1520031441872-265e4ff70366?auto=format&fit=crop&w=1200&q=80';
+  if (/kia|hyundai/.test(t)) return 'https://images.unsplash.com/photo-1581540222194-0def2dda95b8?auto=format&fit=crop&w=1200&q=80';
+  const pool = ['gallery/car-theme-hero.jpg', 'gallery/gallery-1.jpg', 'gallery/gallery-2.jpg', 'gallery/gallery-3.jpg'];
+  return pool[idx % pool.length];
+}
+
+async function loadNewCarsPage(manualTrigger = false) {
+  if (newCarsState.isLoading) return;
+  newCarsState.isLoading = true;
+
+  const btn = document.getElementById('btn-refresh-new-cars');
+  const apiBadge = document.getElementById('new-cars-api-count');
+  if (btn) btn.disabled = true;
+  if (apiBadge) apiBadge.textContent = 'Syncing Cars & FX API...';
+
+  try {
+    const res = await fetch('/.netlify/functions/new-cars', { headers: { Accept: 'application/json' } });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    newCarsState.syncedAt = data?.fetchedAt || new Date().toISOString();
+    newCarsState.detectedCountry = data?.detectedCountry || 'PK';
+    newCarsState.liveRatesOk = Boolean(data?.liveRatesOk);
+
+    if (data?.rates) {
+      newCarsState.rates = { ...newCarsState.rates, ...data.rates };
+      Object.keys(data.rates).forEach(code => {
+        if (CURRENCIES[code] && typeof data.rates[code] === 'number') {
+          CURRENCIES[code].rate = data.rates[code];
+        }
+      });
+    }
+
+    if (!localStorage.getItem('desihood_newcars_currency') && data?.recommendedCurrency) {
+      newCarsState.currency = data.recommendedCurrency;
+    }
+
+    newCarsState.apiCars = (Array.isArray(data?.apiCars) ? data.apiCars : [])
+      .filter(c => Number(c.year) === 2024 || Number(c.year) === 2025 || Number(c.year) === 2026);
+
+    renderNewCarsView();
+    if (manualTrigger) {
+      showToast(
+        'New Cars & FX Synced',
+        `Loaded ${newCarsState.apiCars.length} 2024–2026 API models & live PKR/USD/AED/EUR rates.`,
+        'success'
+      );
+    }
+  } catch (err) {
+    renderNewCarsView();
+    if (manualTrigger) {
+      showToast('Live Inventory Active', 'Showing all 2024–2026 showroom cars using cached exchange rates.', 'info');
+    }
+  } finally {
+    newCarsState.isLoading = false;
+    if (btn) btn.disabled = false;
+  }
+}
+
+function updateNewCarsCurrencyButtonsUI(activeCurr) {
+  ['PKR', 'USD', 'AED', 'EUR'].forEach(code => {
+    const btn = document.getElementById(`new-cars-curr-btn-${code}`);
+    if (!btn) return;
+    if (code === activeCurr) {
+      btn.className = 'new-cars-curr-btn px-3 py-1.5 rounded-xl text-xs font-extrabold transition-colors bg-amber-500 text-slate-950 border border-amber-400';
+    } else {
+      btn.className = 'new-cars-curr-btn px-3 py-1.5 rounded-xl text-xs font-extrabold transition-colors bg-slate-900 text-slate-300 border border-slate-700 hover:border-amber-500/50';
+    }
+  });
+}
+
+function inquireNewApiCar(carName) {
+  const msg = encodeURIComponent(`Assalam-o-Alaikum, please share price & availability for the new ${carName} in ${getEffectiveNewCarsCurrency()}.`);
+  window.open(`https://wa.me/923435972004?text=${msg}`, '_blank', 'noopener,noreferrer');
+}
+
+function renderNewCarsView() {
+  const activeCurr = getEffectiveNewCarsCurrency();
+  updateNewCarsCurrencyButtonsUI(activeCurr);
+
+  const fxBanner = document.getElementById('new-cars-fx-banner');
+  if (fxBanner) {
+    const pkr = Number(newCarsState.rates.PKR || 278.5).toFixed(2);
+    const aed = Number(newCarsState.rates.AED || 3.6725).toFixed(2);
+    const eur = Number(newCarsState.rates.EUR || 0.92).toFixed(2);
+    fxBanner.textContent = `${newCarsState.liveRatesOk ? 'Live API FX' : 'FX Rates'}: 1 USD = ${pkr} PKR | ${aed} AED | ${eur} EUR`;
+  }
+
+  const keyword = (document.getElementById('new-cars-search')?.value || '').toLowerCase().trim();
+  const yrFilter = newCarsState.yearFilter;
+
+  // Section 1: Strict 2024, 2025, 2026 New Cars from Site / Supabase inventory (NO old/used cars)
+  const invGrid = document.getElementById('new-cars-inventory-grid');
+  const invCountEl = document.getElementById('new-cars-inv-count');
+  if (invGrid) {
+    const allowedYears = new Set([2024, 2025, 2026]);
+    const newInvCars = (appState.cars || []).filter(car => {
+      const yr = Number(car.year);
+      if (!allowedYears.has(yr)) return false;
+      if (car.isOldCar || String(car.condition || '').toLowerCase().includes('used')) return false;
+      if (yrFilter !== 'all' && yr !== Number(yrFilter)) return false;
+      if (keyword) {
+        const hay = `${car.year} ${car.make} ${car.model} ${car.engine || ''} ${car.fuelType || ''} ${car.color || ''}`.toLowerCase();
+        if (!hay.includes(keyword)) return false;
+      }
+      return true;
+    }).sort((a, b) => Number(b.year) - Number(a.year));
+
+    if (invCountEl) invCountEl.textContent = `${newInvCars.length} New Cars`;
+
+    if (!newInvCars.length) {
+      invGrid.innerHTML = `
+        <div class="col-span-full py-10 text-center text-slate-400 glass-panel rounded-2xl border border-slate-800">
+          <h4 class="text-white font-bold text-sm">No matching 2024–2026 showroom cars found</h4>
+          <p class="text-xs text-slate-500 mt-1">Try selecting "All (2024–2026)" or clearing your search filter.</p>
+        </div>
+      `;
+    } else {
+      invGrid.innerHTML = newInvCars.map(car => {
+        const dealer = getDealerById(car.dealerId);
+        const engineLabel = car.engine || `${car.fuelType || 'Petrol'} • ${car.transmission || 'Auto'}`;
+        const displayPrice = formatNewCarPrice(car.price, activeCurr);
+        return `
+          <div class="glass-card rounded-3xl overflow-hidden border border-slate-800 flex flex-col justify-between">
+            <div>
+              <div onclick="openCarDetailModal('${car.id}')" class="relative h-52 bg-slate-950 overflow-hidden cursor-pointer">
+                <img src="${escapeHtml(car.image || 'gallery/gallery-1.jpg')}" alt="${escapeHtml(car.year)} ${escapeHtml(car.make)} ${escapeHtml(car.model)}" class="w-full h-full object-cover">
+                <span class="absolute top-3 left-3 px-2.5 py-1 rounded-lg bg-emerald-500 text-slate-950 text-[10px] font-black uppercase tracking-wider">
+                  ${escapeHtml(car.year)} New
+                </span>
+                <span class="absolute top-3 right-3 px-2.5 py-1 rounded-lg bg-slate-950/85 border border-slate-700 text-amber-400 text-[10px] font-bold">
+                  ${escapeHtml(activeCurr)}
+                </span>
+              </div>
+
+              <div class="p-5">
+                <div class="text-2xl font-black text-amber-400 heading-font">${escapeHtml(displayPrice)}</div>
+                <h4 onclick="openCarDetailModal('${car.id}')" class="text-base font-extrabold text-white mt-1 cursor-pointer hover:text-amber-400 transition-colors">
+                  ${escapeHtml(car.year)} ${escapeHtml(car.make)} ${escapeHtml(car.model)}
+                </h4>
+
+                <div class="grid grid-cols-2 gap-2 mt-3 text-[11px] text-slate-300">
+                  <div class="px-2.5 py-2 rounded-xl bg-slate-900/90 border border-slate-800">
+                    <span class="block text-[10px] text-slate-500 uppercase font-bold">Model Year</span>
+                    <span class="font-bold text-white">${escapeHtml(car.year)}</span>
+                  </div>
+                  <div class="px-2.5 py-2 rounded-xl bg-slate-900/90 border border-slate-800">
+                    <span class="block text-[10px] text-slate-500 uppercase font-bold">Engine</span>
+                    <span class="font-bold text-white truncate block" title="${escapeHtml(engineLabel)}">${escapeHtml(engineLabel)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="px-5 pb-5 pt-2 flex items-center gap-2 border-t border-slate-800/70">
+              <button onclick="openCarDetailModal('${car.id}')" class="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs transition-colors">
+                View Details
+              </button>
+              <a href="https://wa.me/923435972004?text=${encodeURIComponent(`Assalam-o-Alaikum, I am interested in the ${car.year} ${car.make} ${car.model} (${displayPrice}) on Desi Hood Cars New Cars.`)}" target="_blank" rel="noopener noreferrer" class="px-3 py-2.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500 text-emerald-400 hover:text-slate-950 border border-emerald-500/30 font-bold text-xs transition-colors">
+                WhatsApp
+              </a>
+              <a href="mailto:desihoodcars@gmail.com?subject=${encodeURIComponent(`Inquiry: ${car.year} ${car.make} ${car.model} (${displayPrice})`)}" title="Email desihoodcars@gmail.com" class="p-2.5 rounded-xl bg-slate-900 hover:bg-amber-500 text-amber-400 hover:text-slate-950 border border-slate-700 transition-colors">
+                <i data-lucide="mail" class="w-3.5 h-3.5"></i>
+              </a>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+  }
+
+  // Section 2: Live API-Ninjas 2024-2026 Specs Catalog
+  const apiGrid = document.getElementById('new-cars-api-grid');
+  const apiCountEl = document.getElementById('new-cars-api-count');
+  if (apiGrid) {
+    const filteredApiCars = (newCarsState.apiCars || []).filter(car => {
+      const yr = Number(car.year);
+      if (yr !== 2024 && yr !== 2025 && yr !== 2026) return false;
+      if (yrFilter !== 'all' && yr !== Number(yrFilter)) return false;
+      if (keyword) {
+        const hay = `${car.year} ${car.make} ${car.model} ${car.engine} ${car.className}`.toLowerCase();
+        if (!hay.includes(keyword)) return false;
+      }
+      return true;
+    });
+
+    if (apiCountEl) {
+      apiCountEl.textContent = newCarsState.apiCars.length
+        ? `${filteredApiCars.length} Live API Models (2024–2026)`
+        : (newCarsState.isLoading ? 'Loading Cars API...' : 'Cars API Ready');
+    }
+
+    if (!filteredApiCars.length) {
+      apiGrid.innerHTML = `
+        <div class="col-span-full py-10 text-center text-slate-400 glass-panel rounded-2xl border border-slate-800">
+          <p class="text-xs text-slate-300">${newCarsState.isLoading ? 'Fetching live 2024–2026 models from Cars API...' : 'No 2024–2026 Cars API models matched this filter. Click Sync API to refresh.'}</p>
+        </div>
+      `;
+    } else {
+      apiGrid.innerHTML = filteredApiCars.map((car, idx) => `
+        <div class="glass-card rounded-3xl overflow-hidden border border-slate-800 flex flex-col justify-between">
+          <div>
+            <div class="relative h-48 bg-slate-950 overflow-hidden">
+              <img src="${pickApiCarPhoto(car.make, car.model, idx)}" alt="${escapeHtml(car.name)}" class="w-full h-full object-cover">
+              <span class="absolute top-3 left-3 px-2.5 py-1 rounded-lg bg-sky-500 text-slate-950 text-[10px] font-black uppercase tracking-wider">
+                ${escapeHtml(car.year)} API Spec
+              </span>
+              <span class="absolute top-3 right-3 px-2.5 py-1 rounded-lg bg-slate-950/85 border border-slate-700 text-slate-200 text-[10px] font-bold">
+                ${escapeHtml(car.drive)}
+              </span>
+            </div>
+
+            <div class="p-5">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-sm font-extrabold text-amber-400">Price on Request (${escapeHtml(activeCurr)})</span>
+                <span class="text-[10px] text-slate-400 font-semibold">${escapeHtml(car.className)}</span>
+              </div>
+              <h4 class="text-base font-extrabold text-white mt-1">
+                ${escapeHtml(car.name)}
+              </h4>
+
+              <div class="grid grid-cols-2 gap-2 mt-3 text-[11px] text-slate-300">
+                <div class="px-2.5 py-2 rounded-xl bg-slate-900/90 border border-slate-800">
+                  <span class="block text-[10px] text-slate-500 uppercase font-bold">Model Year</span>
+                  <span class="font-bold text-white">${escapeHtml(car.year)}</span>
+                </div>
+                <div class="px-2.5 py-2 rounded-xl bg-slate-900/90 border border-slate-800">
+                  <span class="block text-[10px] text-slate-500 uppercase font-bold">Engine</span>
+                  <span class="font-bold text-white truncate block" title="${escapeHtml(car.engine)}">${escapeHtml(car.engine)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="px-5 pb-5 pt-2 flex items-center gap-2 border-t border-slate-800/70">
+            <button onclick="inquireNewApiCar('${escapeHtml(car.name).replace(/'/g, "\\'")}')" class="flex-1 py-2.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500 text-emerald-400 hover:text-slate-950 border border-emerald-500/30 font-extrabold text-xs transition-colors flex items-center justify-center space-x-1.5">
+              <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>
+              <span>WhatsApp (+923435972004)</span>
+            </button>
+            <a href="mailto:desihoodcars@gmail.com?subject=${encodeURIComponent(`New Car Price Request: ${car.name} (${activeCurr})`)}" title="Email desihoodcars@gmail.com" class="px-3 py-2.5 rounded-xl bg-amber-500/15 hover:bg-amber-500 text-amber-400 hover:text-slate-950 border border-amber-500/30 font-bold text-xs inline-flex items-center space-x-1 transition-colors">
+              <i data-lucide="mail" class="w-3.5 h-3.5"></i>
+              <span>Email</span>
+            </a>
+          </div>
+        </div>
+      `).join('');
+    }
+  }
+
+  lucide.createIcons();
 }

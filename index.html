@@ -66,11 +66,15 @@
           </div>
         </div>
 
-        <!-- Quick Helpline Pill (Desktop) -->
-        <div class="hidden lg:flex items-center space-x-2 text-xs">
-          <a href="https://wa.me/923435972004" target="_blank" class="px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 font-semibold flex items-center space-x-1.5 transition-colors">
+        <!-- Quick Helpline & Email Pills (Desktop) -->
+        <div class="hidden xl:flex items-center space-x-2 text-xs">
+          <a href="https://wa.me/923435972004" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 font-semibold flex items-center space-x-1.5 transition-colors">
             <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>
-            <span>+92 343 5972004</span>
+            <span>+923435972004</span>
+          </a>
+          <a href="mailto:desihoodcars@gmail.com" class="px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:bg-amber-500/20 font-semibold flex items-center space-x-1.5 transition-colors">
+            <i data-lucide="mail" class="w-3.5 h-3.5"></i>
+            <span>desihoodcars@gmail.com</span>
           </a>
         </div>
 
@@ -192,6 +196,10 @@
         <button id="nav-btn-marketplace" onclick="switchView('marketplace')" class="shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors text-slate-950 bg-amber-500 border border-amber-400 shadow-md shadow-amber-500/20 flex items-center space-x-1.5">
           <i data-lucide="car" class="w-3.5 h-3.5"></i>
           <span>Explore Cars</span>
+        </button>
+        <button id="nav-btn-new-cars" onclick="switchView('new-cars')" class="shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/50 transition-colors flex items-center space-x-1.5">
+          <i data-lucide="sparkles" class="w-3.5 h-3.5 text-emerald-400"></i>
+          <span>New Cars</span>
         </button>
         <button id="nav-btn-old-cars" onclick="switchView('old-cars')" class="shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/50 transition-colors flex items-center space-x-1.5">
           <i data-lucide="history" class="w-3.5 h-3.5 text-orange-400"></i>
@@ -2287,6 +2295,111 @@
             <h3 class="text-sm font-extrabold text-white uppercase tracking-wider">Published Car Blogs Moderation</h3>
             <div id="owner-blogs-admin-list" class="space-y-3"></div>
           </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- VIEW: NEW CARS (2024-2026 & LIVE FX API)       -->
+  <!-- ============================================== -->
+  <div id="view-new-cars" class="hidden py-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+      <!-- New Cars Header & Top Currency Selector -->
+      <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-8 pb-6 border-b border-slate-800/80">
+        <div>
+          <div class="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold uppercase tracking-wider mb-3">
+            <i data-lucide="sparkles" class="w-4 h-4"></i>
+            <span>Brand New Models Only &bull; 2024, 2025 &amp; 2026</span>
+          </div>
+          <h2 class="text-3xl sm:text-4xl font-extrabold text-white heading-font">New Cars Showroom</h2>
+          <p class="text-slate-400 mt-2 text-sm max-w-2xl">Explore 2024, 2025, and 2026 new cars automatically synced from your live showroom inventory alongside real-time specs and exchange-rate conversion via the Cars &amp; FX API.</p>
+        </div>
+
+        <!-- Currency Selector Bar (PKR / USD / AED / EUR) -->
+        <div class="glass-panel rounded-2xl p-3 border border-slate-800 flex flex-col sm:flex-row sm:items-center gap-3 shrink-0">
+          <div class="flex items-center gap-1.5" id="new-cars-currency-buttons">
+            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1">Currency:</span>
+            <button id="new-cars-curr-btn-PKR" onclick="selectNewCarsCurrency('PKR')" class="new-cars-curr-btn px-3 py-1.5 rounded-xl text-xs font-extrabold transition-colors bg-slate-900 text-slate-300 border border-slate-700 hover:border-amber-500/50">PKR</button>
+            <button id="new-cars-curr-btn-USD" onclick="selectNewCarsCurrency('USD')" class="new-cars-curr-btn px-3 py-1.5 rounded-xl text-xs font-extrabold transition-colors bg-amber-500 text-slate-950 border border-amber-400">USD</button>
+            <button id="new-cars-curr-btn-AED" onclick="selectNewCarsCurrency('AED')" class="new-cars-curr-btn px-3 py-1.5 rounded-xl text-xs font-extrabold transition-colors bg-slate-900 text-slate-300 border border-slate-700 hover:border-amber-500/50">AED</button>
+            <button id="new-cars-curr-btn-EUR" onclick="selectNewCarsCurrency('EUR')" class="new-cars-curr-btn px-3 py-1.5 rounded-xl text-xs font-extrabold transition-colors bg-slate-900 text-slate-300 border border-slate-700 hover:border-amber-500/50">EUR</button>
+          </div>
+          <button onclick="loadNewCarsPage(true)" id="btn-refresh-new-cars" class="px-3 py-1.5 rounded-xl bg-sky-500/15 hover:bg-sky-500 text-sky-400 hover:text-slate-950 border border-sky-500/30 text-xs font-bold inline-flex items-center justify-center space-x-1.5 transition-colors">
+            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+            <span>Sync API</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Live API-Ninjas FX Banner & Filters -->
+      <div class="glass-panel rounded-2xl p-4 border border-slate-800 mb-8 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div class="flex flex-wrap items-center gap-2">
+          <button onclick="filterNewCarsYear('all', this)" class="new-cars-year-btn px-3.5 py-1.5 rounded-lg text-xs font-bold bg-amber-500 text-slate-950 transition-colors">All (2024–2026)</button>
+          <button onclick="filterNewCarsYear(2026, this)" class="new-cars-year-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 border border-slate-800 hover:border-slate-700 transition-colors">2026</button>
+          <button onclick="filterNewCarsYear(2025, this)" class="new-cars-year-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 border border-slate-800 hover:border-slate-700 transition-colors">2025</button>
+          <button onclick="filterNewCarsYear(2024, this)" class="new-cars-year-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-slate-300 border border-slate-800 hover:border-slate-700 transition-colors">2024</button>
+          <span id="new-cars-fx-banner" class="text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full">
+            Live Exchange Rates Ready
+          </span>
+        </div>
+
+        <div class="relative w-full lg:w-72">
+          <input type="text" id="new-cars-search" oninput="renderNewCarsView()" placeholder="Search make, model, engine, 2024/2025/2026..." class="w-full bg-slate-900 border border-slate-700 rounded-xl pl-9 pr-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500">
+          <i data-lucide="search" class="w-4 h-4 text-slate-500 absolute left-3 top-2"></i>
+        </div>
+      </div>
+
+      <!-- Direct WhatsApp & Email Contact Strip (New Cars Concierge) -->
+      <div class="glass-panel rounded-2xl p-4 border border-emerald-500/25 mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div class="flex items-center space-x-2 text-xs text-slate-300">
+          <i data-lucide="headphones" class="w-4 h-4 text-amber-400 shrink-0"></i>
+          <span><strong class="text-white">Book or Inquire About Any 2024–2026 New Car:</strong> Contact our official desk directly.</span>
+        </div>
+        <div class="flex flex-wrap items-center gap-2 shrink-0">
+          <a href="https://wa.me/923435972004" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500 text-emerald-400 hover:text-slate-950 border border-emerald-500/30 text-xs font-extrabold inline-flex items-center space-x-1.5 transition-colors">
+            <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>
+            <span>WhatsApp: +923435972004</span>
+          </a>
+          <a href="mailto:desihoodcars@gmail.com?subject=New%20Cars%202024-2026%20Inquiry" class="px-3.5 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500 text-amber-400 hover:text-slate-950 border border-amber-500/30 text-xs font-extrabold inline-flex items-center space-x-1.5 transition-colors">
+            <i data-lucide="mail" class="w-3.5 h-3.5"></i>
+            <span>Email: desihoodcars@gmail.com</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- SECTION 1: Live Showroom & Supabase New Cars Inventory (Auto-Synced + Currency Converted) -->
+      <div class="mb-12">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-5">
+          <div>
+            <h3 class="text-xl font-extrabold text-white heading-font">Live Showroom New Cars (2024 – 2026)</h3>
+            <p class="text-xs text-slate-400 mt-0.5">Auto-updated from your website &amp; Supabase inventory — prices converted live in your selected currency.</p>
+          </div>
+          <span id="new-cars-inv-count" class="text-xs font-bold px-3 py-1 rounded-full bg-slate-900 border border-slate-700 text-amber-400">0 New Cars</span>
+        </div>
+
+        <div id="new-cars-inventory-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <!-- Populated dynamically by app.js -->
+        </div>
+      </div>
+
+      <!-- SECTION 2: Live API-Ninjas 2024-2026 Vehicle Specs Catalog -->
+      <div>
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-5 pt-6 border-t border-slate-800/80">
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="w-2 h-2 rounded-full bg-sky-400"></span>
+              <h3 class="text-xl font-extrabold text-white heading-font">Live Cars API Specs Catalog (2024 – 2026)</h3>
+            </div>
+            <p class="text-xs text-slate-400 mt-0.5">Real-time 2024–2026 model specifications pulled live from the Cars API (click Inquire to request local dealership pricing).</p>
+          </div>
+          <span id="new-cars-api-count" class="text-xs font-bold px-3 py-1 rounded-full bg-sky-500/15 border border-sky-500/30 text-sky-400">Connecting Cars API...</span>
+        </div>
+
+        <div id="new-cars-api-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <!-- Populated dynamically from /.netlify/functions/new-cars -->
         </div>
       </div>
 
