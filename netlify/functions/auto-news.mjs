@@ -1,4 +1,4 @@
-// Netlify Function: Live Auto News Metadata Fetcher for Mercedes-Benz, BMW Group & Range Rover
+// Netlify Function: Live Auto News Metadata Fetcher for Global Automaker Portals
 
 const BRAND_SOURCES = [
   {
@@ -41,6 +41,13 @@ const BRAND_SOURCES = [
     brand: 'Honda Global',
     name: 'Honda Global Newsroom',
     url: 'https://global.honda/en/',
+    badge: 'Official Global Portal'
+  },
+  {
+    id: 'suzuki-global',
+    brand: 'Suzuki Global',
+    name: 'Global Suzuki News',
+    url: 'https://www.globalsuzuki.com/',
     badge: 'Official Global Portal'
   }
 ];

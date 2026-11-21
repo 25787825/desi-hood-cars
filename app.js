@@ -2550,6 +2550,17 @@ const AUTO_NEWS_BRANDS = [
     tagline: 'All-New Hybrid Avancier SUV, 0 Series EVs & Next-Gen CR-V',
     fallbackHeadline: 'All-New Hybrid Avancier DualPower eAWD & Honda 0 Series',
     fallbackSummary: 'Global Honda updates on 100% hybrid CR-V plans, $3B Ohio hybrid expansion, and next-gen EV prototypes.'
+  },
+  {
+    id: 'suzuki-global',
+    brand: 'Suzuki Global',
+    name: 'Global Suzuki News',
+    url: 'https://www.globalsuzuki.com/',
+    blogId: 'blog-news-suzuki',
+    accent: 'emerald',
+    tagline: 'All-New BEV e VITARA, 10M Swift & Jimny Global Updates',
+    fallbackHeadline: 'Suzuki e VITARA Global BEV, ALLGRIP-e & 10M Swift Milestone',
+    fallbackSummary: 'Global Suzuki announcements on HEARTECT-e electric SUVs, Swift & Jimny sales, and Technology Strategy 2026.'
   }
 ];
 
@@ -2732,7 +2743,7 @@ async function syncBrandAutoUpdates(manualTrigger = false) {
       const timeLabel = new Date(autoNewsFeedsCache.syncedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       statusEl.textContent = liveCount > 0
         ? `Live Connected (${liveCount}/${AUTO_NEWS_BRANDS.length}) • ${timeLabel}`
-        : `6 Official Portals Linked • ${timeLabel}`;
+        : `${AUTO_NEWS_BRANDS.length} Official Portals Linked • ${timeLabel}`;
     }
 
     renderBrandAutoNewsPanel();
@@ -2746,7 +2757,7 @@ async function syncBrandAutoUpdates(manualTrigger = false) {
       );
     }
   } catch (err) {
-    if (statusEl) statusEl.textContent = '6 Official Portals Linked (Verified Mode)';
+    if (statusEl) statusEl.textContent = `${AUTO_NEWS_BRANDS.length} Official Portals Linked (Verified Mode)`;
     renderBrandAutoNewsPanel();
     if (manualTrigger) {
       showToast('Official Portals Ready', 'Showing verified brand updates & direct official portal links.', 'info');

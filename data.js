@@ -1518,5 +1518,18 @@ const INITIAL_BLOGS = [
     image: "https://images.unsplash.com/photo-1590362891991-f776e747a588?auto=format&fit=crop&w=1200&q=80",
     excerpt: "Honda unveils the all-new DualPower eAWD Avancier hybrid SUV, commits to an all-hybrid next-gen CR-V, and expands Ohio & Canada hybrid plants.",
     content: "Honda Global Newsroom unveiled major hybrid and next-generation electrification updates shaping its 2026–2030 automobile lineup.\n\nKey announcements include the world premiere of the all-new Avancier SUV—the first Honda hybrid wearing the new 'H' emblem, powered by a next-generation Honda Hybrid system and DualPower eAWD—alongside confirmation that the next-generation CR-V will transition to 100% hybrid power.\n\nAlongside Honda 0 Series EV prototypes showcased at the Japan Mobility Show, Honda announced a $3 billion Central Ohio auto plant investment and expanded Canadian manufacturing for global hybrid growth.\n\nOfficial Global Newsroom: https://global.honda/en/"
+  },
+  {
+    id: "blog-news-suzuki",
+    title: "Suzuki Global News: First Global BEV e VITARA, 10M Swift & Jimny Updates",
+    category: "Auto News & Updates",
+    author: "Global Suzuki News",
+    carTag: "Suzuki Global",
+    sourceUrl: "https://www.globalsuzuki.com/",
+    readTime: "4 min read",
+    publishedDate: "2026-11-21",
+    image: "https://images.unsplash.com/photo-1609521263047-f8f205293f24?auto=format&fit=crop&w=1200&q=80",
+    excerpt: "Suzuki spotlights its first global BEV—the e VITARA with ALLGRIP-e 4WD—alongside 10M cumulative Swift sales, Jimny demand, and Technology Strategy 2026.",
+    content: "Official announcements from Global Suzuki highlight the automaker's global EV rollout, iconic compact SUV demand, and 10-year engineering roadmap.\n\nHeadlining the lineup is Suzuki's first global battery electric SUV, the all-new e VITARA built on the dedicated HEARTECT-e platform with 49 kWh to 61 kWh battery options and ALLGRIP-e dual-eAxle electric 4WD.\n\nSuzuki also celebrated surpassing 10 million cumulative global Swift sales, sustained international demand across 3-door and 5-door Jimny models, and its Technology Strategy 2026 focused on energy minimization and multi-pathway electrification.\n\nOfficial Global Portal: https://www.globalsuzuki.com/"
   }
 ];
