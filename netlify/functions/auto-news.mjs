@@ -69,9 +69,27 @@ const NEWSROOM_FEEDS = [
     rssUrl: 'https://news.google.com/rss/search?q=MG%20Pakistan%20cars&hl=en-PK&gl=PK&ceid=PK:en'
   },
   {
+    id: 'auto-industry',
+    brand: 'Auto Industry',
+    label: 'Google News: Cars & Auto Industry',
+    rssUrl: 'https://news.google.com/rss/search?q=%22automotive%20industry%22%20OR%20%22new%20car%20launch%22%20OR%20automakers%20when%3A7d&hl=en-US&gl=US&ceid=US:en'
+  },
+  {
+    id: 'pk-auto-industry',
+    brand: 'PK Auto Industry',
+    label: 'Google News: Pakistan Auto Industry',
+    rssUrl: 'https://news.google.com/rss/search?q=Pakistan%20auto%20industry%20OR%20PAMA%20cars%20when%3A30d&hl=en-PK&gl=PK&ceid=PK:en'
+  },
+  {
+    id: 'ev-industry',
+    brand: 'EV & Launches',
+    label: 'Google News: EV & New Cars',
+    rssUrl: 'https://news.google.com/rss/search?q=%22electric%20vehicle%22%20OR%20%22hybrid%20car%22%20OR%20%22car%20sales%22%20when%3A7d&hl=en-US&gl=US&ceid=US:en'
+  },
+  {
     id: 'global-vehicles',
-    brand: 'Global Vehicles',
-    label: 'Global Auto News',
+    brand: 'Google Vehicles',
+    label: 'Google News Vehicles Topic',
     rssUrl: 'https://news.google.com/rss/topics/CAAqIAgKIhpDQkFTRFFvSEwyMHZNR3MwYWhJQ1pXNG9BQVAB?hl=en-US&gl=US&ceid=US%3Aen'
   }
 ];
@@ -134,7 +152,7 @@ async function fetchRssChannel(feedCfg) {
     const xml = await res.text();
     const items = [];
     const itemRe = /<item>([\s\S]*?)<\/item>/gi;
-    const maxItems = feedCfg.id === 'global-vehicles' ? 6 : 4;
+    const maxItems = (feedCfg.id === 'auto-industry' || feedCfg.id === 'pk-auto-industry' || feedCfg.id === 'ev-industry' || feedCfg.id === 'global-vehicles') ? 6 : 4;
     let m;
 
     while ((m = itemRe.exec(xml)) !== null && items.length < maxItems) {
