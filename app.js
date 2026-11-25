@@ -2637,17 +2637,25 @@ async function shareAllAutoUpdates() {
   await copyShareText(fullText, 'Live Newsroom updates');
 }
 
+async function fetchPlatformApi(vercelUrl, netlifyUrl) {
+  let res = await fetch(vercelUrl, { headers: { Accept: 'application/json' } });
+  if (!res.ok && netlifyUrl) {
+    res = await fetch(netlifyUrl, { headers: { Accept: 'application/json' } });
+  }
+  return res;
+}
+
 async function syncBrandAutoUpdates(manualTrigger = false) {
   if (newsroomState.isSyncing) return;
   newsroomState.isSyncing = true;
 
   const statusEl = document.getElementById('newsroom-sync-status');
   const syncBtn = document.getElementById('btn-sync-auto-news');
-  if (statusEl) statusEl.textContent = 'Syncing 12 Live RSS Feeds...';
+  if (statusEl) statusEl.textContent = 'Syncing Google Auto News...';
   if (syncBtn) syncBtn.disabled = true;
 
   try {
-    const res = await fetch('/.netlify/functions/auto-news', { headers: { Accept: 'application/json' } });
+    const res = await fetchPlatformApi('/api/auto-news', '/.netlify/functions/auto-news');
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
 
@@ -4699,7 +4707,7 @@ async function loadNewCarsPage(manualTrigger = false) {
   if (apiBadge) apiBadge.textContent = 'Syncing Cars & FX API...';
 
   try {
-    const res = await fetch('/.netlify/functions/new-cars', { headers: { Accept: 'application/json' } });
+    const res = await fetchPlatformApi('/api/new-cars', '/.netlify/functions/new-cars');
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
 
