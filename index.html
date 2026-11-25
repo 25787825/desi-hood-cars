@@ -67,7 +67,7 @@
           </div>
         </div>
 
-        <!-- Quick Helpline & Email Pills (Desktop) -->
+        <!-- Quick Helpline, Email & YouTube Pills (Desktop) -->
         <div class="hidden xl:flex items-center space-x-2 text-xs">
           <a href="https://wa.me/923435972004" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 font-semibold flex items-center space-x-1.5 transition-colors">
             <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>
@@ -76,6 +76,10 @@
           <a href="mailto:desihoodcars@gmail.com" class="px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:bg-amber-500/20 font-semibold flex items-center space-x-1.5 transition-colors">
             <i data-lucide="mail" class="w-3.5 h-3.5"></i>
             <span>desihoodcars@gmail.com</span>
+          </a>
+          <a href="https://www.youtube.com/@DesiBoysCars?sub_confirmation=1" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-400 hover:bg-rose-500/20 font-semibold flex items-center space-x-1.5 transition-colors">
+            <i data-lucide="youtube" class="w-3.5 h-3.5"></i>
+            <span>@DesiBoysCars</span>
           </a>
         </div>
 
@@ -217,6 +221,10 @@
         <button id="nav-btn-blogs" onclick="switchView('blogs')" class="shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/50 transition-colors flex items-center space-x-1.5">
           <i data-lucide="newspaper" class="w-3.5 h-3.5 text-sky-400"></i>
           <span>Car Blogs &amp; News</span>
+        </button>
+        <button id="nav-btn-youtube" onclick="switchView('youtube')" class="shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/50 transition-colors flex items-center space-x-1.5">
+          <i data-lucide="youtube" class="w-3.5 h-3.5 text-rose-500"></i>
+          <span>YouTube Videos</span>
         </button>
         <button id="nav-btn-parts" onclick="switchView('spare-parts')" class="shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/50 transition-colors flex items-center space-x-1.5">
           <i data-lucide="wrench" class="w-3.5 h-3.5 text-amber-400"></i>
@@ -1350,6 +1358,15 @@
             </div>
 
             <div class="glass-panel p-6 rounded-2xl border border-slate-800">
+              <div class="flex items-center space-x-3 text-rose-400 mb-2">
+                <i data-lucide="youtube" class="w-5 h-5"></i>
+                <h4 class="font-bold text-white text-sm">Official YouTube Channel</h4>
+              </div>
+              <p class="text-xs text-slate-400 mb-2">Watch car reviews, walkarounds &amp; 2026 spotlights:</p>
+              <a href="https://www.youtube.com/@DesiBoysCars" target="_blank" rel="noopener noreferrer" class="text-sm font-bold text-rose-400 hover:underline">@DesiBoysCars (Desi Hood Cars)</a>
+            </div>
+
+            <div class="glass-panel p-6 rounded-2xl border border-slate-800">
               <div class="flex items-center space-x-3 text-purple-400 mb-2">
                 <i data-lucide="clock" class="w-5 h-5"></i>
                 <h4 class="font-bold text-white text-sm">Showroom & Support Hours</h4>
@@ -2411,6 +2428,52 @@
   </div>
 
   <!-- ============================================== -->
+  <!-- VIEW: YOUTUBE CHANNEL (@DesiBoysCars)          -->
+  <!-- ============================================== -->
+  <div id="view-youtube" class="hidden py-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+      <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-8 pb-6 border-b border-slate-800/80">
+        <div>
+          <div class="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-semibold uppercase tracking-wider mb-3">
+            <i data-lucide="youtube" class="w-4 h-4"></i>
+            <span>Official Channel &bull; @DesiBoysCars</span>
+          </div>
+          <h2 class="text-3xl sm:text-4xl font-extrabold text-white heading-font">Desi Hood Cars YouTube</h2>
+          <p class="text-slate-400 mt-2 text-sm max-w-2xl">Every new car review, interior walkaround, and Short uploaded on <strong class="text-white">@DesiBoysCars</strong> appears here automatically. Watch inline or subscribe on YouTube.</p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2.5 shrink-0">
+          <button onclick="loadYouTubeChannelVideos(true)" id="btn-refresh-youtube" class="inline-flex items-center space-x-2 px-4 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 font-bold text-xs uppercase tracking-wider transition-colors">
+            <i data-lucide="refresh-cw" class="w-4 h-4 text-sky-400"></i>
+            <span>Sync Videos</span>
+          </button>
+          <a href="https://www.youtube.com/@DesiBoysCars?sub_confirmation=1" target="_blank" rel="noopener noreferrer" class="inline-flex items-center space-x-2 px-5 py-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-xs uppercase tracking-wider shadow-lg shadow-rose-600/25 transition-all">
+            <i data-lucide="youtube" class="w-4 h-4"></i>
+            <span>Subscribe (@DesiBoysCars)</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Featured Inline Video Player -->
+      <div id="youtube-featured-section" class="glass-panel rounded-3xl p-4 sm:p-6 border border-rose-500/25 mb-8">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+          <span class="text-xs font-bold uppercase tracking-wider text-rose-400">Now Playing from @DesiBoysCars</span>
+          <span id="youtube-sync-status" class="text-[11px] font-semibold px-3 py-1 rounded-full bg-slate-900 border border-slate-700 text-slate-300">Loading Channel Feed...</span>
+        </div>
+        <div id="youtube-featured-player" class="rounded-2xl overflow-hidden bg-black border border-slate-800">
+          <!-- Populated dynamically by app.js -->
+        </div>
+      </div>
+
+      <!-- Latest Channel Videos Grid -->
+      <div id="youtube-videos-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Populated dynamically from /api/youtube -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
   <!-- VIEW: OLD CARS SECTION (KM & WORKING DETAILS)  -->
   <!-- ============================================== -->
   <div id="view-old-cars" class="hidden py-12">
@@ -3310,6 +3373,7 @@
       <div class="flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-slate-400">
         <a href="mailto:desihoodcars@gmail.com" class="text-amber-400 hover:underline font-semibold">desihoodcars@gmail.com</a>
         <a href="https://wa.me/923435972004" target="_blank" class="text-emerald-400 hover:underline font-semibold">WhatsApp: +92 343 5972004</a>
+        <a href="https://www.youtube.com/@DesiBoysCars" target="_blank" rel="noopener noreferrer" class="text-rose-400 hover:underline font-semibold">YouTube: @DesiBoysCars</a>
         <a href="javascript:void(0)" onclick="resetAllDemoData()" class="text-amber-400 hover:underline">Reset Demo Data</a>
         <a href="javascript:void(0)" onclick="switchView('old-cars')" class="hover:text-orange-400">Old Cars</a>
         <a href="javascript:void(0)" onclick="switchView('browse-more')" class="hover:text-cyan-400">Browse More</a>

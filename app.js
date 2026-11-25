@@ -98,6 +98,7 @@ document.addEventListener("DOMContentLoaded", () => {
   renderBlogs();
   syncBrandAutoUpdates(false);
   loadNewCarsPage(false);
+  loadYouTubeChannelVideos(false);
   renderBuyerAccountView();
   updateBuyerNavLabel();
   updateOwnerNavVisibility();
@@ -363,6 +364,7 @@ function switchView(viewName) {
     { id: 'browse-more', el: document.getElementById('view-browse-more'), btn: document.getElementById('nav-btn-browse-more') },
     { id: 'gallery', el: document.getElementById('view-gallery'), btn: document.getElementById('nav-btn-gallery') },
     { id: 'blogs', el: document.getElementById('view-blogs'), btn: document.getElementById('nav-btn-blogs') },
+    { id: 'youtube', el: document.getElementById('view-youtube'), btn: document.getElementById('nav-btn-youtube') },
     { id: 'dealers-directory', el: document.getElementById('view-dealers-directory'), btn: document.getElementById('nav-btn-dealers') },
     { id: 'spare-parts', el: document.getElementById('view-spare-parts'), btn: document.getElementById('nav-btn-parts') },
     { id: 'sell-car', el: document.getElementById('view-sell-car'), btn: document.getElementById('nav-btn-sell') },
@@ -405,6 +407,7 @@ function switchView(viewName) {
   else if (viewName === 'old-cars') renderOldCarsSection();
   else if (viewName === 'browse-more') renderBrowseMoreHub();
   else if (viewName === 'blogs') renderBlogs();
+  else if (viewName === 'youtube') renderYouTubeView();
   else if (viewName === 'dealers-directory') renderDealersDirectory();
   else if (viewName === 'spare-parts') renderSpareParts();
   else if (viewName === 'buyer-account') renderBuyerAccountView();
@@ -4938,6 +4941,174 @@ function renderNewCarsView() {
         </div>
       `).join('');
     }
+  }
+
+  lucide.createIcons();
+}
+
+// ==========================================
+// YOUTUBE CHANNEL (@DesiBoysCars) ENGINE
+// ==========================================
+let youtubeState = {
+  isLoading: false,
+  syncedAt: null,
+  activeVideoId: '7TK_xM8cz_k',
+  channelUrl: 'https://www.youtube.com/@DesiBoysCars',
+  subscribeUrl: 'https://www.youtube.com/@DesiBoysCars?sub_confirmation=1',
+  videos: []
+};
+
+async function loadYouTubeChannelVideos(manualTrigger = false) {
+  if (youtubeState.isLoading) return;
+  youtubeState.isLoading = true;
+
+  const btn = document.getElementById('btn-refresh-youtube');
+  const statusEl = document.getElementById('youtube-sync-status');
+  if (btn) btn.disabled = true;
+  if (statusEl) statusEl.textContent = 'Syncing @DesiBoysCars...';
+
+  try {
+    const res = await fetch('/api/youtube', { headers: { Accept: 'application/json' } });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    if (Array.isArray(data?.videos) && data.videos.length) {
+      youtubeState.videos = data.videos;
+      youtubeState.activeVideoId = data.videos[0].videoId;
+    }
+    youtubeState.syncedAt = data?.fetchedAt || new Date().toISOString();
+
+    if (statusEl) {
+      statusEl.textContent = `${youtubeState.videos.length} Videos Synced • @DesiBoysCars`;
+    }
+    renderYouTubeView();
+    if (manualTrigger) {
+      showToast('YouTube Synced', `Loaded ${youtubeState.videos.length} latest videos from @DesiBoysCars.`, 'success');
+    }
+  } catch (err) {
+    if (statusEl) statusEl.textContent = '@DesiBoysCars Channel Connected';
+    renderYouTubeView();
+    if (manualTrigger) {
+      showToast('Channel Ready', 'Watch or subscribe to @DesiBoysCars directly on YouTube.', 'info');
+    }
+  } finally {
+    youtubeState.isLoading = false;
+    if (btn) btn.disabled = false;
+  }
+}
+
+function playYouTubeVideo(videoId) {
+  if (!videoId) return;
+  youtubeState.activeVideoId = videoId;
+  renderYouTubeView();
+  document.getElementById('youtube-featured-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function shareYouTubeVideoWhatsApp(videoId) {
+  const v = youtubeState.videos.find(item => item.videoId === videoId);
+  const url = v ? v.url : `https://www.youtube.com/watch?v=${videoId}`;
+  const text = `${v ? v.title : 'Watch Desi Hood Cars on YouTube'} — @DesiBoysCars\n${url}`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
+}
+
+async function shareYouTubeVideo(videoId) {
+  const v = youtubeState.videos.find(item => item.videoId === videoId);
+  const url = v ? v.url : `https://www.youtube.com/watch?v=${videoId}`;
+  const title = v ? v.title : 'Desi Hood Cars (@DesiBoysCars)';
+  if (navigator.share) {
+    try {
+      await navigator.share({ title, text: `${title} — Watch on @DesiBoysCars`, url });
+      return;
+    } catch (err) {
+      if (err?.name === 'AbortError') return;
+    }
+  }
+  await copyShareText(`${title}\n${url}`, 'YouTube video link');
+}
+
+function renderYouTubeView() {
+  const playerWrap = document.getElementById('youtube-featured-player');
+  const grid = document.getElementById('youtube-videos-grid');
+  if (!playerWrap || !grid) return;
+
+  const activeVid = youtubeState.videos.find(v => v.videoId === youtubeState.activeVideoId) || youtubeState.videos[0];
+  const vidId = activeVid?.videoId || youtubeState.activeVideoId || '7TK_xM8cz_k';
+
+  playerWrap.innerHTML = `
+    <div class="relative w-full aspect-video bg-black">
+      <iframe
+        src="https://www.youtube.com/embed/${escapeHtml(vidId)}?rel=0"
+        title="${escapeHtml(activeVid?.title || 'Desi Hood Cars (@DesiBoysCars)')}"
+        class="w-full h-full border-0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen>
+      </iframe>
+    </div>
+    ${activeVid ? `
+      <div class="p-4 bg-slate-900/90 border-t border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h3 class="text-sm sm:text-base font-extrabold text-white">${escapeHtml(activeVid.title)}</h3>
+          <p class="text-xs text-slate-400 mt-0.5">${escapeHtml(activeVid.publishedDate || '')}${activeVid.views ? ` &bull; ${formatNumber(activeVid.views)} views` : ''}</p>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <a href="${escapeHtml(activeVid.url)}" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold inline-flex items-center space-x-1.5">
+            <span>Open on YouTube</span>
+            <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+          </a>
+          <button onclick="shareYouTubeVideoWhatsApp('${escapeHtml(activeVid.videoId)}')" class="px-3 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500 text-emerald-400 hover:text-slate-950 border border-emerald-500/30 text-xs font-bold">
+            WhatsApp
+          </button>
+        </div>
+      </div>
+    ` : ''}
+  `;
+
+  if (!youtubeState.videos.length) {
+    grid.innerHTML = `
+      <div class="col-span-full py-10 text-center glass-panel rounded-2xl border border-slate-800">
+        <p class="text-xs text-slate-300 mb-3">${youtubeState.isLoading ? 'Loading latest videos from @DesiBoysCars...' : 'Subscribe or click Sync Videos to load the latest uploads from @DesiBoysCars.'}</p>
+        <a href="https://www.youtube.com/@DesiBoysCars" target="_blank" rel="noopener noreferrer" class="inline-flex items-center space-x-2 px-4 py-2 rounded-xl bg-rose-600 text-white text-xs font-bold">
+          <span>Visit @DesiBoysCars on YouTube</span>
+        </a>
+      </div>
+    `;
+  } else {
+    grid.innerHTML = youtubeState.videos.map(v => `
+      <div class="glass-card rounded-3xl overflow-hidden border border-slate-800 flex flex-col justify-between">
+        <div>
+          <div onclick="playYouTubeVideo('${escapeHtml(v.videoId)}')" class="relative h-48 bg-black overflow-hidden cursor-pointer">
+            <img src="${escapeHtml(v.thumbnail)}" alt="${escapeHtml(v.title)}" class="w-full h-full object-cover">
+            <span class="absolute top-3 left-3 px-2.5 py-1 rounded-lg bg-rose-600 text-white text-[10px] font-black uppercase tracking-wider flex items-center space-x-1">
+              <i data-lucide="play" class="w-3 h-3"></i>
+              <span>Watch</span>
+            </span>
+            ${v.views ? `<span class="absolute bottom-3 right-3 px-2 py-0.5 rounded bg-slate-950/85 text-slate-200 text-[10px] font-semibold">${formatNumber(v.views)} views</span>` : ''}
+          </div>
+          <div class="p-5">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-rose-400">@DesiBoysCars &bull; ${escapeHtml(v.publishedDate || '')}</span>
+            <h4 onclick="playYouTubeVideo('${escapeHtml(v.videoId)}')" class="text-sm font-extrabold text-white mt-1 hover:text-amber-400 cursor-pointer line-clamp-2">
+              ${escapeHtml(v.title)}
+            </h4>
+            ${v.description ? `<p class="text-xs text-slate-400 mt-2 line-clamp-2">${escapeHtml(v.description)}</p>` : ''}
+          </div>
+        </div>
+        <div class="px-5 pb-5 pt-2 flex items-center gap-1.5 border-t border-slate-800/70">
+          <button onclick="playYouTubeVideo('${escapeHtml(v.videoId)}')" class="flex-1 py-2 rounded-xl bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/30 text-xs font-bold transition-colors">
+            Play Video
+          </button>
+          <a href="${escapeHtml(v.url)}" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 text-xs font-bold inline-flex items-center space-x-1">
+            <span>YT</span>
+            <i data-lucide="external-link" class="w-3 h-3"></i>
+          </a>
+          <button onclick="shareYouTubeVideoWhatsApp('${escapeHtml(v.videoId)}')" title="Share on WhatsApp" class="p-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500 text-emerald-400 hover:text-slate-950 border border-emerald-500/30 transition-colors">
+            <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>
+          </button>
+          <button onclick="shareYouTubeVideo('${escapeHtml(v.videoId)}')" title="Share Link" class="p-2 rounded-xl bg-sky-500/15 hover:bg-sky-500 text-sky-400 hover:text-slate-950 border border-sky-500/30 transition-colors">
+            <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+      </div>
+    `).join('');
   }
 
   lucide.createIcons();
