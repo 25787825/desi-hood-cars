@@ -1964,10 +1964,33 @@ function renderPakistanBanksGrid() {
   lucide.createIcons();
 }
 
+function formatFinancingAmount(amount) {
+  const cur = CURRENCIES[appState.currentCurrency] || CURRENCIES.USD;
+  const val = Math.max(0, Math.round(Number(amount) || 0));
+  return `${cur.symbol}${formatNumber(val)}`;
+}
+
+function syncFinancingSliderInput(field, val) {
+  const clamped = Math.max(0, Math.min(50000000, Number(val) || 0));
+  const numInput = document.getElementById(field === 'price' ? 'calc-price-input' : 'calc-down-input');
+  if (numInput) numInput.value = clamped;
+  calculateFinancing();
+}
+
+function syncFinancingNumberInput(field, val) {
+  const num = parseFloat(val);
+  const clamped = isNaN(num) ? 0 : Math.max(0, Math.min(50000000, num));
+  const slider = document.getElementById(field === 'price' ? 'calc-price' : 'calc-down');
+  if (slider) slider.value = clamped;
+  calculateFinancing();
+}
+
 function calculateFinancing() {
-  const price = parseFloat(document.getElementById("calc-price")?.value || 75000);
-  const down = parseFloat(document.getElementById("calc-down")?.value || 15000);
-  const term = parseInt(document.getElementById("calc-term")?.value || 60);
+  const rawPrice = parseFloat(document.getElementById("calc-price")?.value ?? 5000000);
+  const price = isNaN(rawPrice) ? 0 : Math.max(0, Math.min(50000000, rawPrice));
+  const rawDown = parseFloat(document.getElementById("calc-down")?.value ?? 1500000);
+  const down = isNaN(rawDown) ? 0 : Math.max(0, Math.min(50000000, rawDown));
+  const term = parseInt(document.getElementById("calc-term")?.value || 60, 10);
   const bankId = document.getElementById("calc-bank-select")?.value || "hbl";
   const bank = PAKISTAN_BANK_FINANCE_RATES.find(b => b.id === bankId);
 
@@ -1979,8 +2002,8 @@ function calculateFinancing() {
 
   const displayPrice = document.getElementById("calc-price-display");
   const displayDown = document.getElementById("calc-down-display");
-  if (displayPrice) displayPrice.textContent = formatCurrency(price);
-  if (displayDown) displayDown.textContent = formatCurrency(down);
+  if (displayPrice) displayPrice.textContent = formatFinancingAmount(price);
+  if (displayDown) displayDown.textContent = formatFinancingAmount(down);
 
   const fallbackBox = document.getElementById("bank-fallback-link-box");
   const fallbackTitle = document.getElementById("bank-fallback-title");
@@ -2025,10 +2048,10 @@ function calculateFinancing() {
 
   if (elMonthly) elMonthly.innerHTML = rateUnavailable && bank
     ? `<span class="text-2xl text-sky-400">See Bank Portal</span>`
-    : `${formatCurrency(Math.round(monthly))} <span class="text-xs text-slate-400 font-normal">/ month</span>`;
-  if (elFinanced) elFinanced.textContent = formatCurrency(principal);
-  if (elInterest) elInterest.textContent = rateUnavailable && bank ? "Variable" : formatCurrency(Math.round(totalInterest));
-  if (elCost) elCost.textContent = rateUnavailable && bank ? "See Bank Calculator" : formatCurrency(Math.round(totalCost));
+    : `${formatFinancingAmount(Math.round(monthly))} <span class="text-xs text-slate-400 font-normal">/ month</span>`;
+  if (elFinanced) elFinanced.textContent = formatFinancingAmount(principal);
+  if (elInterest) elInterest.textContent = rateUnavailable && bank ? "Variable" : formatFinancingAmount(Math.round(totalInterest));
+  if (elCost) elCost.textContent = rateUnavailable && bank ? "See Bank Calculator" : formatFinancingAmount(Math.round(totalCost));
   if (elBankName) elBankName.textContent = bank ? bank.name : "Custom Rate";
   if (elSummaryRate) elSummaryRate.textContent = rateUnavailable ? "Not Set (See Bank Link)" : `${annualApr.toFixed(2)}% p.a.`;
 

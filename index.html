@@ -1124,24 +1124,35 @@
             </div>
 
             <div>
-              <div class="flex justify-between items-center mb-2">
-                <label class="text-xs font-bold text-slate-300 uppercase tracking-wider">Vehicle Purchase Price</label>
-                <span id="calc-price-display" class="text-base font-extrabold text-white heading-font">$75,000</span>
+              <div class="flex flex-wrap justify-between items-center gap-2 mb-2">
+                <label class="text-xs font-bold text-slate-300 uppercase tracking-wider">Vehicle Purchase Price (0 – 50 Million)</label>
+                <div class="flex items-center space-x-2">
+                  <span id="calc-price-display" class="text-base font-extrabold text-white heading-font">5,000,000</span>
+                  <input type="number" id="calc-price-input" min="0" max="50000000" step="10000" value="5000000" oninput="syncFinancingNumberInput('price', this.value)" class="w-32 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-amber-400 font-bold text-right focus:outline-none focus:border-amber-500">
+                </div>
               </div>
-              <input type="range" id="calc-price" min="5000" max="200000" step="1000" value="75000" oninput="calculateFinancing()" class="w-full h-2 bg-slate-800 rounded-lg cursor-pointer">
+              <input type="range" id="calc-price" min="0" max="50000000" step="50000" value="5000000" oninput="syncFinancingSliderInput('price', this.value)" class="w-full h-2 bg-slate-800 rounded-lg cursor-pointer">
               <div class="flex justify-between text-[11px] text-slate-500 mt-1">
-                <span>Low Range</span>
-                <span>Mid Range</span>
-                <span>Flagship</span>
+                <span>0</span>
+                <span>25 Million</span>
+                <span>50 Million</span>
               </div>
             </div>
 
             <div>
-              <div class="flex justify-between items-center mb-2">
+              <div class="flex flex-wrap justify-between items-center gap-2 mb-2">
                 <label class="text-xs font-bold text-slate-300 uppercase tracking-wider">Down Payment / Trade-in (Min 30% in PK)</label>
-                <span id="calc-down-display" class="text-base font-extrabold text-emerald-400 heading-font">$15,000</span>
+                <div class="flex items-center space-x-2">
+                  <span id="calc-down-display" class="text-base font-extrabold text-emerald-400 heading-font">1,500,000</span>
+                  <input type="number" id="calc-down-input" min="0" max="50000000" step="10000" value="1500000" oninput="syncFinancingNumberInput('down', this.value)" class="w-32 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-emerald-400 font-bold text-right focus:outline-none focus:border-emerald-500">
+                </div>
               </div>
-              <input type="range" id="calc-down" min="0" max="150000" step="500" value="15000" oninput="calculateFinancing()" class="w-full h-2 bg-slate-800 rounded-lg cursor-pointer">
+              <input type="range" id="calc-down" min="0" max="50000000" step="25000" value="1500000" oninput="syncFinancingSliderInput('down', this.value)" class="w-full h-2 bg-slate-800 rounded-lg cursor-pointer">
+              <div class="flex justify-between text-[11px] text-slate-500 mt-1">
+                <span>0</span>
+                <span>25 Million</span>
+                <span>50 Million</span>
+              </div>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
