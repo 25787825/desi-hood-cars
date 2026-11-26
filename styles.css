@@ -282,7 +282,27 @@ input[type="range"] {
 }
 
 .dh-depth-layer {
-  transform: translateZ(22px);
+  transform: translate3d(var(--tx, 0px), var(--ty, 0px), 28px);
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+/* Smooth 3D Cursor-Tracked Typography Layers */
+.dh-3d-stage-text {
+  perspective: 1100px;
+  transform-style: preserve-3d;
+}
+
+.dh-3d-text,
+.dh-parallax-text {
+  will-change: transform;
+  transform-style: preserve-3d;
+  transition: text-shadow 0.15s ease-out;
+}
+
+.dh-magnetic {
+  will-change: transform;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s ease, border-color 0.2s ease;
 }
 
 /* Glowing Red Indicator Dot (Apex pill CTA aesthetic) */

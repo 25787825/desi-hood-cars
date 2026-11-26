@@ -353,6 +353,7 @@
       });
 
       if (!prefersReducedMotion) {
+        updateCursorTextParallax(mouseX, mouseY, isMobile);
         requestAnimationFrame(frame);
       }
     }
@@ -360,18 +361,73 @@
     requestAnimationFrame(frame);
   }
 
-  // Interactive cursor-tracked 3D perspective tilt for cards
+  // Smooth global 3D cursor-tracked motion for website text & headings
+  function updateCursorTextParallax(mx, my, isMobile) {
+    if (isMobile) return;
+
+    const layers = document.querySelectorAll('[data-3d-depth], main section h2, .dh-parallax-text');
+    for (let i = 0; i < layers.length; i++) {
+      const el = layers[i];
+      // Skip elements inside modals or hidden tabs
+      if (el.offsetParent === null) continue;
+
+      const depth = parseFloat(el.getAttribute('data-3d-depth')) || 11;
+      const tilt = parseFloat(el.getAttribute('data-3d-tilt')) || 0.35;
+
+      const tx = mx * depth;
+      const ty = my * depth * 0.65;
+      const rx = -my * tilt * 5.0;
+      const ry = mx * tilt * 6.2;
+
+      el.style.transform = `perspective(1000px) translate3d(${tx.toFixed(2)}px, ${ty.toFixed(2)}px, ${Math.round(depth * 0.6)}px) rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg)`;
+
+      if (el.id === 'hero-3d-title') {
+        const sx = (-mx * 10).toFixed(1);
+        const sy = (-my * 8).toFixed(1);
+        el.style.textShadow = `${sx}px ${sy}px 28px rgba(239, 68, 68, 0.32), ${(sx * 0.4).toFixed(1)}px ${(sy * 0.4).toFixed(1)}px 10px rgba(0, 0, 0, 0.85)`;
+      }
+    }
+  }
+
+  // Interactive cursor-tracked 3D perspective tilt + inner text parallax for cards & magnetic buttons
   function init3DTiltCards() {
     if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) return;
 
     let activeCard = null;
+    let activeMag = null;
+
+    function resetCard(card) {
+      if (!card) return;
+      card.style.transform = '';
+      card.style.removeProperty('--mx');
+      card.style.removeProperty('--my');
+      const depthEls = card.querySelectorAll('.dh-depth-layer, h3, p, .dh-outline-num');
+      depthEls.forEach(d => {
+        d.style.removeProperty('--tx');
+        d.style.removeProperty('--ty');
+        d.style.transform = '';
+      });
+    }
 
     document.addEventListener('mousemove', function (e) {
+      // 1. Magnetic CTA / Brand Logo pull
+      const mag = e.target.closest('.dh-magnetic');
+      if (activeMag && activeMag !== mag) {
+        activeMag.style.transform = '';
+        activeMag = null;
+      }
+      if (mag) {
+        activeMag = mag;
+        const mRect = mag.getBoundingClientRect();
+        const mdx = ((e.clientX - mRect.left) / Math.max(mRect.width, 1) - 0.5) * 14;
+        const mdy = ((e.clientY - mRect.top) / Math.max(mRect.height, 1) - 0.5) * 10;
+        mag.style.transform = `translate3d(${mdx.toFixed(2)}px, ${mdy.toFixed(2)}px, 12px)`;
+      }
+
+      // 2. 3D Card tilt + inner text counter-parallax
       const card = e.target.closest('.dh-3d-tilt, .glass-card');
       if (activeCard && activeCard !== card) {
-        activeCard.style.transform = '';
-        activeCard.style.removeProperty('--mx');
-        activeCard.style.removeProperty('--my');
+        resetCard(activeCard);
         activeCard = null;
       }
       if (!card) return;
@@ -381,18 +437,33 @@
       if (!rect.width || !rect.height) return;
       const px = (e.clientX - rect.left) / rect.width;
       const py = (e.clientY - rect.top) / rect.height;
-      const rotY = (px - 0.5) * 7.5;
-      const rotX = (0.5 - py) * 7.5;
+      const rotY = (px - 0.5) * 9.5;
+      const rotX = (0.5 - py) * 9.5;
+      const innerX = (px - 0.5) * 16;
+      const innerY = (py - 0.5) * 12;
 
       card.style.setProperty('--mx', (px * 100).toFixed(1) + '%');
       card.style.setProperty('--my', (py * 100).toFixed(1) + '%');
-      card.style.transform = `perspective(1000px) rotateX(${rotX.toFixed(2)}deg) rotateY(${rotY.toFixed(2)}deg) translateY(-4px) scale3d(1.01, 1.01, 1.01)`;
+      card.style.transform = `perspective(1000px) rotateX(${rotX.toFixed(2)}deg) rotateY(${rotY.toFixed(2)}deg) translateY(-5px) scale3d(1.015, 1.015, 1.015)`;
+
+      const depthEls = card.querySelectorAll('.dh-depth-layer, .dh-outline-num');
+      depthEls.forEach(d => {
+        d.style.setProperty('--tx', innerX.toFixed(2) + 'px');
+        d.style.setProperty('--ty', innerY.toFixed(2) + 'px');
+        if (!d.classList.contains('dh-depth-layer')) {
+          d.style.transform = `translate3d(${(innerX * 0.7).toFixed(2)}px, ${(innerY * 0.7).toFixed(2)}px, 24px)`;
+        }
+      });
     }, { passive: true });
 
     document.addEventListener('mouseleave', function () {
       if (activeCard) {
-        activeCard.style.transform = '';
+        resetCard(activeCard);
         activeCard = null;
+      }
+      if (activeMag) {
+        activeMag.style.transform = '';
+        activeMag = null;
       }
     }, { passive: true });
   }

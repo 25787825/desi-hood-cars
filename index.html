@@ -79,7 +79,7 @@
       <div class="flex flex-wrap items-center justify-between gap-3 min-h-[5rem] py-2.5">
         
         <!-- Brand Logo -->
-        <div class="flex items-center space-x-3 cursor-pointer group" onclick="switchView('marketplace')">
+        <div class="dh-magnetic flex items-center space-x-3 cursor-pointer group" onclick="switchView('marketplace')">
           <div class="w-16 h-11 rounded-xl bg-black border border-red-500/40 overflow-hidden flex items-center justify-center shadow-lg shadow-red-600/20 group-hover:border-red-400 transition-colors shrink-0">
             <img src="gallery/desi-hood-cars-brand.jpg" alt="Desi Hood Cars by Ahmad Raza Logo" class="w-full h-full object-contain">
           </div>
@@ -316,26 +316,26 @@
       <!-- Hero Section (3D Interactive Stage) -->
       <section class="relative py-12 lg:py-16 overflow-hidden border-b border-white/10">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div class="text-center max-w-4xl mx-auto mb-9">
-            <div class="inline-flex items-center space-x-2.5 px-4 py-1.5 rounded-full bg-black/70 backdrop-blur-md border border-red-500/40 text-slate-200 mono-hud text-[11px] uppercase tracking-[0.2em] mb-5">
+          <div class="dh-3d-stage-text text-center max-w-4xl mx-auto mb-9">
+            <div data-3d-depth="14" data-3d-tilt="0.4" class="dh-3d-text inline-flex items-center space-x-2.5 px-4 py-1.5 rounded-full bg-black/70 backdrop-blur-md border border-red-500/40 text-slate-200 mono-hud text-[11px] uppercase tracking-[0.2em] mb-5">
               <span class="dh-pulse-dot animate-pulse"></span>
               <span>00 &middot; APEX 3D SHOWROOM &middot; BUY &bull; SELL &bull; DRIVE BETTER</span>
             </div>
-            <h1 class="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight heading-font text-white leading-[1.05]">
+            <h1 id="hero-3d-title" data-3d-depth="34" data-3d-tilt="1.1" class="dh-3d-text text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight heading-font text-white leading-[1.05]">
               DESI <span class="text-red-500">HOOD</span> CARS <br>
               <span class="text-2xl sm:text-4xl lg:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-red-400">
                 by Ahmad Raza
               </span>
             </h1>
-            <p class="mt-4 text-sm sm:text-base text-slate-300/90 max-w-2xl mx-auto leading-relaxed">
+            <p data-3d-depth="18" data-3d-tilt="0.55" class="dh-3d-text mt-4 text-sm sm:text-base text-slate-300/90 max-w-2xl mx-auto leading-relaxed">
               Interactive 3D automotive showroom &amp; global certified dealer marketplace. Zero middleman markup across Pakistan, UAE, UK, USA &amp; global inventory.
             </p>
-            <div class="mt-6 flex flex-wrap items-center justify-center gap-3">
-              <a href="#inventory-showcase-section" onclick="document.getElementById('marketplace-grid')?.scrollIntoView({ behavior: 'smooth' }); return false;" class="inline-flex items-center space-x-2.5 px-6 py-3 rounded-full bg-black/80 hover:bg-red-600 text-white border border-red-500/60 mono-hud text-xs font-semibold uppercase tracking-widest transition-all shadow-lg shadow-red-600/20">
+            <div data-3d-depth="24" data-3d-tilt="0.45" class="dh-3d-text mt-6 flex flex-wrap items-center justify-center gap-3">
+              <a href="#inventory-showcase-section" onclick="document.getElementById('marketplace-grid')?.scrollIntoView({ behavior: 'smooth' }); return false;" class="dh-magnetic inline-flex items-center space-x-2.5 px-6 py-3 rounded-full bg-black/80 hover:bg-red-600 text-white border border-red-500/60 mono-hud text-xs font-semibold uppercase tracking-widest transition-all shadow-lg shadow-red-600/20">
                 <span class="dh-pulse-dot"></span>
                 <span>Begin The Drive &nearr;</span>
               </a>
-              <button onclick="switchView('sell-car')" class="inline-flex items-center space-x-2 px-5 py-3 rounded-full bg-white/5 hover:bg-white/10 text-slate-200 border border-white/15 mono-hud text-xs uppercase tracking-widest transition-all">
+              <button onclick="switchView('sell-car')" class="dh-magnetic inline-flex items-center space-x-2 px-5 py-3 rounded-full bg-white/5 hover:bg-white/10 text-slate-200 border border-white/15 mono-hud text-xs uppercase tracking-widest transition-all">
                 <span>Sell Your Machine &nearr;</span>
               </button>
             </div>
