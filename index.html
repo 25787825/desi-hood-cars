@@ -50,7 +50,30 @@
   <!-- Custom CSS -->
   <link rel="stylesheet" href="styles.css">
 </head>
-<body class="theme-obsidian text-slate-100 min-h-screen flex flex-col antialiased selection:bg-amber-500 selection:text-black">
+<body class="theme-obsidian text-slate-100 min-h-screen flex flex-col antialiased selection:bg-red-600 selection:text-white">
+
+  <!-- Full-Viewport Interactive 3D Canvas & Atmospheric Grain (Apex Motion Style) -->
+  <canvas id="dh-3d-canvas" aria-hidden="true"></canvas>
+  <div class="dh-film-grain" aria-hidden="true"></div>
+
+  <!-- Minimalist Scroll Telemetry HUD (Desktop Left & Right Edge) -->
+  <div class="hidden xl:flex fixed bottom-5 left-5 z-30 items-center space-x-2.5 px-3 py-1.5 rounded-full bg-black/65 backdrop-blur-md border border-white/10 pointer-events-none select-none">
+    <span class="dh-pulse-dot animate-pulse"></span>
+    <span id="dh-hud-label" class="mono-hud text-[10px] tracking-[0.18em] text-slate-300 uppercase">GEAR 01 &middot; BASE &middot; SCROLL TO DRIVE</span>
+  </div>
+
+  <div id="dh-scroll-hint" class="hidden md:flex fixed bottom-4 left-1/2 -translate-x-1/2 z-30 flex-col items-center space-y-1.5 pointer-events-none select-none transition-opacity duration-500">
+    <span class="mono-hud text-[9px] tracking-[0.28em] text-slate-400 uppercase">SCROLL</span>
+    <span class="w-px h-6 bg-gradient-to-b from-red-500 to-transparent"></span>
+  </div>
+
+  <div class="hidden xl:flex fixed right-4 top-1/2 -translate-y-1/2 z-30 flex-col items-center space-y-2 pointer-events-none select-none">
+    <span id="dh-hud-stage-num" class="mono-hud text-[10px] font-semibold text-red-400 tracking-widest">01</span>
+    <div class="w-px h-24 bg-white/10 relative overflow-hidden">
+      <div id="dh-hud-fill" class="w-full bg-red-500 transition-all duration-200" style="height: 20%;"></div>
+    </div>
+    <span class="mono-hud text-[9px] text-slate-500 tracking-widest">APEX</span>
+  </div>
 
   <!-- Toast Notification Container -->
   <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col space-y-3 pointer-events-none"></div>
@@ -288,57 +311,63 @@
   </header>
 
   <!-- MAIN APPLICATION CONTENT -->
-  <main class="flex-grow">
+  <main class="flex-grow relative z-10">
     
     <!-- ============================================== -->
     <!-- VIEW 1: PUBLIC BUYER MARKETPLACE               -->
     <!-- ============================================== -->
     <div id="view-marketplace" class="block">
       
-      <!-- Hero Section -->
-      <section class="relative py-14 lg:py-18 overflow-hidden border-b border-slate-800/80">
-        <!-- Ambient lighting blobs -->
-        <div class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-amber-500/10 blur-[130px] rounded-full pointer-events-none"></div>
-
+      <!-- Hero Section (3D Interactive Stage) -->
+      <section class="relative py-12 lg:py-16 overflow-hidden border-b border-white/10">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div class="text-center max-w-3xl mx-auto mb-8">
-            <div class="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-semibold uppercase tracking-wider mb-5">
-              <i data-lucide="shield-check" class="w-4 h-4 text-red-400"></i>
-              <span>Buy &bull; Sell &bull; Drive Better &bull; Certified Network</span>
+          <div class="text-center max-w-4xl mx-auto mb-9">
+            <div class="inline-flex items-center space-x-2.5 px-4 py-1.5 rounded-full bg-black/70 backdrop-blur-md border border-red-500/40 text-slate-200 mono-hud text-[11px] uppercase tracking-[0.2em] mb-5">
+              <span class="dh-pulse-dot animate-pulse"></span>
+              <span>00 &middot; APEX 3D SHOWROOM &middot; BUY &bull; SELL &bull; DRIVE BETTER</span>
             </div>
-            <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight heading-font text-white leading-tight">
-              Find Your Next Machine. <br>
-              <span class="bg-clip-text text-transparent bg-gradient-to-r from-white via-red-400 to-red-600">
-                Desi Hood Cars by Ahmad Raza
+            <h1 class="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight heading-font text-white leading-[1.05]">
+              DESI <span class="text-red-500">HOOD</span> CARS <br>
+              <span class="text-2xl sm:text-4xl lg:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-red-400">
+                by Ahmad Raza
               </span>
             </h1>
-            <p class="mt-4 text-base sm:text-lg text-slate-400">
-              Browse curated luxury, sport, electric, and daily driver vehicles. Buy, sell, and connect directly with verified dealerships with zero middleman markup.
+            <p class="mt-4 text-sm sm:text-base text-slate-300/90 max-w-2xl mx-auto leading-relaxed">
+              Interactive 3D automotive showroom &amp; global certified dealer marketplace. Zero middleman markup across Pakistan, UAE, UK, USA &amp; global inventory.
             </p>
+            <div class="mt-6 flex flex-wrap items-center justify-center gap-3">
+              <a href="#inventory-showcase-section" onclick="document.getElementById('marketplace-grid')?.scrollIntoView({ behavior: 'smooth' }); return false;" class="inline-flex items-center space-x-2.5 px-6 py-3 rounded-full bg-black/80 hover:bg-red-600 text-white border border-red-500/60 mono-hud text-xs font-semibold uppercase tracking-widest transition-all shadow-lg shadow-red-600/20">
+                <span class="dh-pulse-dot"></span>
+                <span>Begin The Drive &nearr;</span>
+              </a>
+              <button onclick="switchView('sell-car')" class="inline-flex items-center space-x-2 px-5 py-3 rounded-full bg-white/5 hover:bg-white/10 text-slate-200 border border-white/15 mono-hud text-xs uppercase tracking-widest transition-all">
+                <span>Sell Your Machine &nearr;</span>
+              </button>
+            </div>
           </div>
 
-          <!-- Official Brand Hero Banner -->
-          <div id="car-theme-showcase" class="max-w-5xl mx-auto mb-8 relative rounded-3xl overflow-hidden border border-red-600/40 bg-black shadow-[0_0_50px_-15px_rgba(220,38,38,0.45)]">
-            <div class="relative w-full h-56 sm:h-80 lg:h-96 bg-black flex items-center justify-center p-2 sm:p-4">
+          <!-- Official Brand 3D Tilt Showcase Card -->
+          <div id="car-theme-showcase" class="dh-3d-tilt max-w-5xl mx-auto mb-8 relative rounded-3xl overflow-hidden border border-red-600/40 bg-black/90 shadow-[0_0_60px_-15px_rgba(220,38,38,0.48)]">
+            <div class="relative w-full h-56 sm:h-80 lg:h-96 bg-black flex items-center justify-center p-2 sm:p-4 dh-depth-layer">
               <img src="gallery/desi-hood-cars-brand.jpg" alt="Desi Hood Cars by Ahmad Raza — Buy, Sell, Drive Better" class="w-full h-full object-contain">
             </div>
 
-            <div class="border-t border-slate-800/80 bg-slate-950/90 px-4 sm:px-6 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="border-t border-white/10 bg-black/90 px-4 sm:px-6 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div class="flex flex-wrap items-center gap-2.5">
-                <span class="px-3 py-1 rounded-full bg-red-600/15 border border-red-500/40 text-red-400 text-[10px] font-extrabold uppercase tracking-widest">
-                  Official Brand
+                <span class="px-3 py-1 rounded-full bg-red-600/15 border border-red-500/40 text-red-400 mono-hud text-[10px] font-semibold uppercase tracking-widest">
+                  3D Brand Crest
                 </span>
                 <span class="text-xs sm:text-sm font-bold text-white heading-font">Desi Hood Cars by Ahmad Raza</span>
-                <span class="text-xs text-slate-400 hidden md:inline">&bull; Buy &bull; Sell &bull; Drive Better</span>
+                <span class="mono-hud text-[11px] text-slate-400 hidden md:inline">&bull; BUY &bull; SELL &bull; DRIVE BETTER</span>
               </div>
               <div class="flex items-center gap-2">
-                <button onclick="openGalleryLightbox('gallery/desi-hood-cars-brand.jpg', 'Desi Hood Cars by Ahmad Raza', 'Official brand artwork — Buy, Sell, Drive Better.')" class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-red-600 text-slate-200 hover:text-white border border-slate-700 text-[11px] font-bold transition-colors flex items-center space-x-1">
+                <button onclick="openGalleryLightbox('gallery/desi-hood-cars-brand.jpg', 'Desi Hood Cars by Ahmad Raza', 'Official brand artwork — Buy, Sell, Drive Better.')" class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-red-600 text-slate-200 hover:text-white border border-white/15 text-[11px] font-bold transition-colors flex items-center space-x-1">
                   <i data-lucide="maximize-2" class="w-3.5 h-3.5"></i>
                   <span>Full View</span>
                 </button>
                 <button onclick="cycleNextTheme()" class="px-3.5 py-1.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-extrabold transition-colors shrink-0 flex items-center space-x-1.5">
                   <i data-lucide="palette" class="w-3.5 h-3.5"></i>
-                  <span>Switch Theme Color</span>
+                  <span>Switch 3D Theme</span>
                 </button>
               </div>
             </div>
@@ -407,6 +436,63 @@
                 </button>
               </div>
 
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Apex-Style 3D Capability Index Strip (01 - 04) -->
+      <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 border-b border-white/10">
+        <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-2 mb-5">
+          <div>
+            <span class="mono-hud text-[11px] tracking-[0.22em] text-red-400 uppercase block mb-1">01 &mdash; PLATFORM ARCHITECTURE</span>
+            <h2 class="text-xl sm:text-2xl font-extrabold text-white heading-font">Engineered Like a 3D Flagship Showroom</h2>
+          </div>
+          <span class="mono-hud text-[10px] tracking-[0.2em] text-slate-400 uppercase">HOVER CARDS FOR 3D PERSPECTIVE</span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div onclick="switchView('dealers-directory')" class="dh-3d-tilt glass-panel rounded-2xl p-5 border border-white/10 hover:border-red-500/50 cursor-pointer flex flex-col justify-between min-h-[168px]">
+            <div class="flex items-start justify-between">
+              <span class="dh-outline-num text-4xl">01</span>
+              <span class="mono-hud text-[10px] text-red-400 tracking-widest uppercase">NETWORK</span>
+            </div>
+            <div class="mt-4 dh-depth-layer">
+              <h3 class="text-sm font-bold text-white heading-font">Verified Dealers</h3>
+              <p class="text-xs text-slate-400 mt-1">Direct showroom contact with zero middleman fees.</p>
+            </div>
+          </div>
+
+          <div onclick="switchView('new-cars')" class="dh-3d-tilt glass-panel rounded-2xl p-5 border border-white/10 hover:border-red-500/50 cursor-pointer flex flex-col justify-between min-h-[168px]">
+            <div class="flex items-start justify-between">
+              <span class="dh-outline-num text-4xl">02</span>
+              <span class="mono-hud text-[10px] text-red-400 tracking-widest uppercase">LIVE RATES</span>
+            </div>
+            <div class="mt-4 dh-depth-layer">
+              <h3 class="text-sm font-bold text-white heading-font">New &amp; Old Cars</h3>
+              <p class="text-xs text-slate-400 mt-1">Instant PKR, USD, AED &amp; GBP global conversion.</p>
+            </div>
+          </div>
+
+          <div onclick="switchView('financing')" class="dh-3d-tilt glass-panel rounded-2xl p-5 border border-white/10 hover:border-red-500/50 cursor-pointer flex flex-col justify-between min-h-[168px]">
+            <div class="flex items-start justify-between">
+              <span class="dh-outline-num text-4xl">03</span>
+              <span class="mono-hud text-[10px] text-red-400 tracking-widest uppercase">0 TO 50M</span>
+            </div>
+            <div class="mt-4 dh-depth-layer">
+              <h3 class="text-sm font-bold text-white heading-font">Auto Financing</h3>
+              <p class="text-xs text-slate-400 mt-1">Flexible monthly calculator from 0 up to 50 Million.</p>
+            </div>
+          </div>
+
+          <div onclick="switchView('youtube')" class="dh-3d-tilt glass-panel rounded-2xl p-5 border border-white/10 hover:border-red-500/50 cursor-pointer flex flex-col justify-between min-h-[168px]">
+            <div class="flex items-start justify-between">
+              <span class="dh-outline-num text-4xl">04</span>
+              <span class="mono-hud text-[10px] text-red-400 tracking-widest uppercase">@DESIBOYSCARS</span>
+            </div>
+            <div class="mt-4 dh-depth-layer">
+              <h3 class="text-sm font-bold text-white heading-font">Media &amp; Auto News</h3>
+              <p class="text-xs text-slate-400 mt-1">Live automotive headlines &amp; official YouTube channel.</p>
             </div>
           </div>
         </div>
@@ -691,7 +777,7 @@
           </div>
         </div>
       </section>
-      <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <section id="inventory-showcase-section" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
           
           <!-- Filters Sidebar -->
@@ -3526,7 +3612,7 @@
   </button>
 
   <!-- Footer -->
-  <footer class="mt-20 border-t border-slate-800 bg-[#070b13] py-12 text-slate-500 text-xs">
+  <footer class="mt-20 border-t border-white/10 bg-[#060608]/95 py-12 text-slate-500 text-xs relative z-10">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
       <div class="flex items-center space-x-2.5">
         <div class="w-10 h-7 rounded-lg bg-black border border-red-500/40 overflow-hidden flex items-center justify-center shrink-0">
@@ -3555,6 +3641,7 @@
   <script src="vendor/supabase.min.js"></script>
   <script src="data.js"></script>
   <script src="supabase-client.js"></script>
+  <script src="motion3d.js"></script>
   <script src="app.js"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
