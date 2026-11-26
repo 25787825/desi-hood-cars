@@ -374,7 +374,8 @@ function switchView(viewName) {
     { id: 'become-dealer', el: document.getElementById('view-become-dealer'), btn: document.getElementById('nav-btn-become-dealer') },
     { id: 'buyer-account', el: document.getElementById('view-buyer-account'), btn: document.getElementById('nav-btn-buyer-account') },
     { id: 'dealer-portal', el: document.getElementById('view-dealer-portal'), btn: document.getElementById('nav-btn-portal') },
-    { id: 'owner-console', el: document.getElementById('view-owner-console'), btn: document.getElementById('nav-btn-owner-desk') }
+    { id: 'owner-console', el: document.getElementById('view-owner-console'), btn: document.getElementById('nav-btn-owner-desk') },
+    { id: 'showroom-owners-pk', el: document.getElementById('view-showroom-owners-pk'), btn: document.getElementById('nav-btn-showroom-owners-pk') }
   ];
 
   views.forEach(v => {
@@ -386,17 +387,24 @@ function switchView(viewName) {
         v.btn.className = "shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 transition-colors border border-emerald-500/30 flex items-center space-x-1.5";
       } else if (v.id === 'owner-console') {
         v.btn.className = (appState.isOwnerAuthenticated ? "flex " : "hidden ") + "shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 transition-colors border border-rose-500/30 items-center space-x-1.5";
+      } else if (v.id === 'showroom-owners-pk') {
+        v.btn.className = (appState.isOwnerAuthenticated ? "flex " : "hidden ") + "shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 transition-colors border border-amber-500/30 items-center space-x-1.5";
       } else {
         v.btn.className = "shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/50 transition-colors flex items-center space-x-1.5";
       }
     }
   });
 
+  if (viewName === 'showroom-owners-pk' && !appState.isOwnerAuthenticated) {
+    openOwnerConsole();
+    return;
+  }
+
   const active = views.find(v => v.id === viewName);
   if (active && active.el) {
     active.el.classList.remove('hidden');
     if (active.btn) {
-      if (active.id !== 'owner-console' || appState.isOwnerAuthenticated) {
+      if ((active.id !== 'owner-console' && active.id !== 'showroom-owners-pk') || appState.isOwnerAuthenticated) {
         active.btn.className = "shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors text-slate-950 bg-amber-500 border border-amber-400 shadow-md shadow-amber-500/20 flex items-center space-x-1.5";
       }
     }
@@ -413,6 +421,7 @@ function switchView(viewName) {
   else if (viewName === 'buyer-account') renderBuyerAccountView();
   else if (viewName === 'dealer-portal') renderDealerPortal();
   else if (viewName === 'owner-console') renderOwnerConsole();
+  else if (viewName === 'showroom-owners-pk') renderShowroomOwnersPK();
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
   lucide.createIcons();
@@ -3548,15 +3557,20 @@ function getOwnerPin() {
 }
 
 function updateOwnerNavVisibility() {
-  const navBtn = document.getElementById("nav-btn-owner-desk");
-  if (!navBtn) return;
-  if (appState.isOwnerAuthenticated) {
-    navBtn.classList.remove("hidden");
-    navBtn.classList.add("flex");
-  } else {
-    navBtn.classList.add("hidden");
-    navBtn.classList.remove("flex");
-  }
+  const navBtns = [
+    document.getElementById("nav-btn-owner-desk"),
+    document.getElementById("nav-btn-showroom-owners-pk")
+  ].filter(Boolean);
+
+  navBtns.forEach(navBtn => {
+    if (appState.isOwnerAuthenticated) {
+      navBtn.classList.remove("hidden");
+      navBtn.classList.add("flex");
+    } else {
+      navBtn.classList.add("hidden");
+      navBtn.classList.remove("flex");
+    }
+  });
 }
 
 function checkPrivateOwnerRoute() {
@@ -5133,6 +5147,299 @@ function renderYouTubeView() {
       </div>
     `).join('');
   }
+
+  lucide.createIcons();
+}
+
+// ==========================================
+// ADMIN ONLY: SHOWROOM OWNERS PAKISTAN DIRECTORY
+// ==========================================
+const INITIAL_PK_SHOWROOM_OWNERS = [
+  {
+    id: 'pk-so-1',
+    showroomName: 'Desi Hood Motors Lahore',
+    ownerName: 'Ahmad Raza',
+    city: 'Lahore',
+    category: 'Car Showroom',
+    phone: '+92 343 5972004',
+    email: 'desihoodcars@gmail.com',
+    location: 'Jail Road Auto Market, Shadman, Lahore',
+    status: 'Active'
+  },
+  {
+    id: 'pk-so-2',
+    showroomName: 'Shahrah-e-Faisal Prestige Cars',
+    ownerName: 'Tariq Mahmood',
+    city: 'Karachi',
+    category: 'Car Showroom',
+    phone: '+92 300 8241190',
+    email: 'tariq.cars@prestigeauto.pk',
+    location: 'Main Shahrah-e-Faisal, PECHS Block 6, Karachi',
+    status: 'Active'
+  },
+  {
+    id: 'pk-so-3',
+    showroomName: 'Capital Blue Area Motors',
+    ownerName: 'Usman Farooq',
+    city: 'Islamabad',
+    category: 'Car Showroom',
+    phone: '+92 333 5124480',
+    email: 'usman@blueareamotors.pk',
+    location: 'Jinnah Avenue, Blue Area G-7, Islamabad',
+    status: 'Active'
+  },
+  {
+    id: 'pk-so-4',
+    showroomName: 'Macleod Road Super Bikes',
+    ownerName: 'Bilal Sheikh',
+    city: 'Lahore',
+    category: 'Bike Showroom',
+    phone: '+92 321 4458901',
+    email: 'bilal@macleodbikes.pk',
+    location: 'Main Macleod Road Bike Plaza, Lahore',
+    status: 'Active'
+  },
+  {
+    id: 'pk-so-5',
+    showroomName: 'Akbar Road Riders Gallery',
+    ownerName: 'Kamran Siddiqui',
+    city: 'Karachi',
+    category: 'Bike Showroom',
+    phone: '+92 312 2093345',
+    email: 'kamran@akbarriders.pk',
+    location: 'Shop 14, Main Akbar Road, Saddar, Karachi',
+    status: 'Active'
+  },
+  {
+    id: 'pk-so-6',
+    showroomName: 'Potohar Heavy Bikes & Cars',
+    ownerName: 'Faisal Nadeem',
+    city: 'Rawalpindi',
+    category: 'Bike Showroom',
+    phone: '+92 334 5567812',
+    email: 'faisal@potoharbikes.pk',
+    location: 'Murree Road, Committee Chowk, Rawalpindi',
+    status: 'In Active'
+  },
+  {
+    id: 'pk-so-7',
+    showroomName: 'Chenab Auto Imperial',
+    ownerName: 'Zain Raza Gillani',
+    city: 'Faisalabad',
+    category: 'Car Showroom',
+    phone: '+92 301 7654321',
+    email: 'zain@chenabauto.pk',
+    location: 'Main Sargodha Road Auto Hub, Faisalabad',
+    status: 'Active'
+  },
+  {
+    id: 'pk-so-8',
+    showroomName: 'Multan Cantonment Motors',
+    ownerName: 'Hamza Qureshi',
+    city: 'Multan',
+    category: 'Car Showroom',
+    phone: '+92 306 9981123',
+    email: 'hamza@multancanttmotors.pk',
+    location: 'Abdali Road, Multan Cantt',
+    status: 'In Active'
+  }
+];
+
+function getPkShowroomOwners() {
+  let list = [];
+  try {
+    const raw = localStorage.getItem('desihood_pk_showroom_owners');
+    list = raw ? JSON.parse(raw) : [...INITIAL_PK_SHOWROOM_OWNERS];
+  } catch (e) {
+    list = [...INITIAL_PK_SHOWROOM_OWNERS];
+  }
+
+  // Also merge any Pakistan dealers created in appState.dealers that aren't in the list yet
+  const existingIds = new Set(list.map(x => x.id));
+  const pkDealers = (appState.dealers || []).filter(d => d.country === 'PK');
+  let addedFromDealers = false;
+  pkDealers.forEach(d => {
+    const mappedId = `pk-dealer-${d.id}`;
+    if (!existingIds.has(mappedId) && !list.some(x => (x.email || '').toLowerCase() === (d.email || '').toLowerCase())) {
+      addedFromDealers = true;
+      const locParts = String(d.location || '').split(',').map(s => s.trim()).filter(Boolean);
+      const city = locParts[0] || 'Lahore';
+      list.push({
+        id: mappedId,
+        showroomName: d.name,
+        ownerName: d.owner || 'Showroom Owner',
+        city,
+        category: 'Car Showroom',
+        phone: d.whatsapp || d.phone || '+92 300 0000000',
+        email: d.email || 'info@desihoodcars.pk',
+        location: d.address || d.location || city,
+        status: d.banned ? 'In Active' : 'Active'
+      });
+    }
+  });
+  if (addedFromDealers || !localStorage.getItem('desihood_pk_showroom_owners')) {
+    localStorage.setItem('desihood_pk_showroom_owners', JSON.stringify(list));
+  }
+  return list;
+}
+
+function savePkShowroomOwners(list) {
+  localStorage.setItem('desihood_pk_showroom_owners', JSON.stringify(list));
+}
+
+function openShowroomOwnersPKPage() {
+  if (!requireOwnerAccess()) return;
+  switchView('showroom-owners-pk');
+}
+
+function togglePkShowroomAddForm(forceShow) {
+  if (!requireOwnerAccess()) return;
+  const box = document.getElementById('pk-showroom-add-box');
+  if (!box) return;
+  if (typeof forceShow === 'boolean') {
+    box.classList.toggle('hidden', !forceShow);
+  } else {
+    box.classList.toggle('hidden');
+  }
+}
+
+function handleAddPkShowroomOwner(e) {
+  e.preventDefault();
+  if (!requireOwnerAccess()) return;
+  const list = getPkShowroomOwners();
+  const entry = {
+    id: 'pk-so-' + Date.now(),
+    showroomName: document.getElementById('pk-so-name').value.trim(),
+    ownerName: document.getElementById('pk-so-owner').value.trim(),
+    city: document.getElementById('pk-so-city').value.trim(),
+    category: document.getElementById('pk-so-category').value,
+    phone: document.getElementById('pk-so-phone').value.trim(),
+    email: document.getElementById('pk-so-email').value.trim(),
+    location: document.getElementById('pk-so-location').value.trim(),
+    status: document.getElementById('pk-so-status').value
+  };
+  list.unshift(entry);
+  savePkShowroomOwners(list);
+  e.target.reset();
+  togglePkShowroomAddForm(false);
+  renderShowroomOwnersPK();
+  showToast('Showroom Added', `${entry.showroomName} added to Showroom Owners Pakistan.`, 'success');
+}
+
+function togglePkShowroomStatus(id) {
+  if (!requireOwnerAccess()) return;
+  const list = getPkShowroomOwners();
+  const item = list.find(s => s.id === id);
+  if (!item) return;
+  item.status = item.status === 'Active' ? 'In Active' : 'Active';
+  savePkShowroomOwners(list);
+  renderShowroomOwnersPK();
+  showToast('Status Updated', `${item.showroomName} is now ${item.status}.`, 'info');
+}
+
+function deletePkShowroomOwner(id) {
+  if (!requireOwnerAccess()) return;
+  if (!confirm('Remove this showroom owner from Pakistan directory?')) return;
+  const list = getPkShowroomOwners().filter(s => s.id !== id);
+  savePkShowroomOwners(list);
+  renderShowroomOwnersPK();
+  showToast('Removed', 'Showroom owner removed from directory.', 'info');
+}
+
+function renderShowroomOwnersPK() {
+  if (!appState.isOwnerAuthenticated) return;
+  const tbody = document.getElementById('pk-showroom-owners-tbody');
+  if (!tbody) return;
+
+  const list = getPkShowroomOwners();
+
+  // Stats
+  const elTotal = document.getElementById('pk-so-stat-total');
+  const elCars = document.getElementById('pk-so-stat-cars');
+  const elBikes = document.getElementById('pk-so-stat-bikes');
+  const elActive = document.getElementById('pk-so-stat-active');
+  const elInactive = document.getElementById('pk-so-stat-inactive');
+
+  if (elTotal) elTotal.textContent = list.length;
+  if (elCars) elCars.textContent = list.filter(s => s.category === 'Car Showroom').length;
+  if (elBikes) elBikes.textContent = list.filter(s => s.category === 'Bike Showroom').length;
+  if (elActive) elActive.textContent = list.filter(s => s.status === 'Active').length;
+  if (elInactive) elInactive.textContent = list.filter(s => s.status !== 'Active').length;
+
+  // Populate city dropdown
+  const citySelect = document.getElementById('pk-so-filter-city');
+  const currentCity = citySelect ? citySelect.value : 'all';
+  if (citySelect) {
+    const cities = [...new Set(list.map(s => s.city).filter(Boolean))].sort();
+    citySelect.innerHTML = `<option value="all">All Cities (${cities.length})</option>` +
+      cities.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+    if (cities.includes(currentCity)) citySelect.value = currentCity;
+  }
+
+  const keyword = (document.getElementById('pk-so-search')?.value || '').toLowerCase().trim();
+  const cityFilter = document.getElementById('pk-so-filter-city')?.value || 'all';
+  const catFilter = document.getElementById('pk-so-filter-category')?.value || 'all';
+  const statusFilter = document.getElementById('pk-so-filter-status')?.value || 'all';
+
+  const filtered = list.filter(item => {
+    if (cityFilter !== 'all' && item.city !== cityFilter) return false;
+    if (catFilter !== 'all' && item.category !== catFilter) return false;
+    if (statusFilter !== 'all' && item.status !== statusFilter) return false;
+    if (keyword) {
+      const hay = `${item.showroomName} ${item.ownerName} ${item.city} ${item.category} ${item.phone} ${item.email} ${item.location} ${item.status}`.toLowerCase();
+      if (!hay.includes(keyword)) return false;
+    }
+    return true;
+  });
+
+  if (!filtered.length) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="9" class="py-10 px-4 text-center text-slate-400">
+          No showroom owners match your current search or filters.
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(item => {
+    const isActive = item.status === 'Active';
+    const isBike = item.category === 'Bike Showroom';
+    const cleanPhone = String(item.phone || '').replace(/[^0-9+]/g, '');
+    return `
+      <tr class="hover:bg-slate-900/60 transition-colors">
+        <td class="py-3.5 px-4 font-extrabold text-white whitespace-nowrap">${escapeHtml(item.showroomName)}</td>
+        <td class="py-3.5 px-4 text-slate-200 font-semibold whitespace-nowrap">${escapeHtml(item.ownerName)}</td>
+        <td class="py-3.5 px-4 text-amber-400 font-bold whitespace-nowrap">${escapeHtml(item.city)}</td>
+        <td class="py-3.5 px-4 whitespace-nowrap">
+          <span class="px-2.5 py-1 rounded-lg text-[10px] font-extrabold uppercase ${isBike ? 'bg-sky-500/15 text-sky-400 border border-sky-500/30' : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'}">
+            ${escapeHtml(item.category)}
+          </span>
+        </td>
+        <td class="py-3.5 px-4 whitespace-nowrap font-mono">
+          <a href="tel:${escapeHtml(cleanPhone)}" class="text-emerald-400 hover:underline">${escapeHtml(item.phone)}</a>
+        </td>
+        <td class="py-3.5 px-4 whitespace-nowrap">
+          <a href="mailto:${escapeHtml(item.email)}" class="text-sky-400 hover:underline">${escapeHtml(item.email)}</a>
+        </td>
+        <td class="py-3.5 px-4 text-slate-300 min-w-[200px]">${escapeHtml(item.location)}</td>
+        <td class="py-3.5 px-4 whitespace-nowrap">
+          <button onclick="togglePkShowroomStatus('${escapeHtml(item.id)}')" title="Click to toggle Active / In Active" class="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase cursor-pointer transition-colors ${isActive ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 hover:bg-emerald-500/30' : 'bg-rose-500/20 text-rose-400 border border-rose-500/40 hover:bg-rose-500/30'}">
+            ${escapeHtml(item.status)}
+          </button>
+        </td>
+        <td class="py-3.5 px-4 whitespace-nowrap text-right space-x-1.5">
+          <button onclick="togglePkShowroomStatus('${escapeHtml(item.id)}')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold border border-slate-700">
+            ${isActive ? 'Set In Active' : 'Set Active'}
+          </button>
+          <button onclick="deletePkShowroomOwner('${escapeHtml(item.id)}')" title="Delete" class="p-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500 text-rose-400 hover:text-white border border-rose-500/30 transition-colors inline-flex items-center">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
 
   lucide.createIcons();
 }
