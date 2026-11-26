@@ -349,6 +349,51 @@ function mapInquiryToRow(i) {
   };
 }
 
+function mapShowroomOwnerToRow(s) {
+  return {
+    id: s.id,
+    showroom_name: s.showroomName,
+    owner_name: s.ownerName,
+    city: s.city,
+    category: s.category || "Car Showroom",
+    phone: s.phone,
+    email: s.email,
+    location: s.location,
+    status: s.status || "Active",
+    is_sample: Boolean(s.isSample)
+  };
+}
+
+function mapRowToShowroomOwner(row) {
+  return {
+    id: row.id,
+    showroomName: row.showroom_name,
+    ownerName: row.owner_name,
+    city: row.city,
+    category: row.category || "Car Showroom",
+    phone: row.phone,
+    email: row.email,
+    location: row.location,
+    status: row.status || "Active",
+    isSample: Boolean(row.is_sample)
+  };
+}
+
+async function sbLoadPkShowroomOwners() {
+  if (!supabaseClient) initSupabaseClient();
+  if (!supabaseClient) return null;
+  try {
+    const { data, error } = await supabaseClient
+      .from("showroom_owners_pk")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) return null;
+    return Array.isArray(data) ? data.map(mapRowToShowroomOwner) : null;
+  } catch {
+    return null;
+  }
+}
+
 async function seedInitialCloudDataIfEmpty() {
   if (!supabaseClient) return false;
   try {
@@ -461,6 +506,9 @@ async function syncFromSupabase() {
     renderDealersDirectory();
     renderSpareParts();
     renderBlogs();
+    if (typeof syncShowroomOwnersPkFromCloud === "function") {
+      syncShowroomOwnersPkFromCloud();
+    }
     updateOwnerPendingBadge();
     updateMarketStatusBar();
     renderSupabaseStatusUI();

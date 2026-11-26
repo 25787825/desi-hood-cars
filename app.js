@@ -3628,6 +3628,8 @@ function handleOwnerLogin(e) {
 function lockOwnerConsole() {
   appState.isOwnerAuthenticated = false;
   sessionStorage.removeItem('desihood_owner_auth');
+  const pkTbody = document.getElementById("pk-showroom-owners-tbody");
+  if (pkTbody) pkTbody.innerHTML = "";
   populateDealerDropdown();
   updateOwnerNavVisibility();
   renderOwnerConsole();
@@ -5154,137 +5156,70 @@ function renderYouTubeView() {
 // ==========================================
 // ADMIN ONLY: SHOWROOM OWNERS PAKISTAN DIRECTORY
 // ==========================================
-const INITIAL_PK_SHOWROOM_OWNERS = [
+const PK_SHOWROOM_STORAGE_KEY = 'desihood_pk_showroom_owners_v2';
+
+const PK_SAMPLE_SHOWROOM_OWNERS = [
   {
-    id: 'pk-so-1',
-    showroomName: 'Desi Hood Motors Lahore',
-    ownerName: 'Ahmad Raza',
+    id: 'pk-sample-1',
+    showroomName: 'Sample Car Showroom (Example)',
+    ownerName: 'Example Car Owner',
     city: 'Lahore',
     category: 'Car Showroom',
-    phone: '+92 343 5972004',
-    email: 'desihoodcars@gmail.com',
-    location: 'Jail Road Auto Market, Shadman, Lahore',
-    status: 'Active'
+    phone: '+92 300 0000001',
+    email: 'sample.car@example.com',
+    location: 'Main Boulevard, Gulberg (Sample Address)',
+    status: 'Active',
+    isSample: true
   },
   {
-    id: 'pk-so-2',
-    showroomName: 'Shahrah-e-Faisal Prestige Cars',
-    ownerName: 'Tariq Mahmood',
-    city: 'Karachi',
-    category: 'Car Showroom',
-    phone: '+92 300 8241190',
-    email: 'tariq.cars@prestigeauto.pk',
-    location: 'Main Shahrah-e-Faisal, PECHS Block 6, Karachi',
-    status: 'Active'
-  },
-  {
-    id: 'pk-so-3',
-    showroomName: 'Capital Blue Area Motors',
-    ownerName: 'Usman Farooq',
-    city: 'Islamabad',
-    category: 'Car Showroom',
-    phone: '+92 333 5124480',
-    email: 'usman@blueareamotors.pk',
-    location: 'Jinnah Avenue, Blue Area G-7, Islamabad',
-    status: 'Active'
-  },
-  {
-    id: 'pk-so-4',
-    showroomName: 'Macleod Road Super Bikes',
-    ownerName: 'Bilal Sheikh',
-    city: 'Lahore',
-    category: 'Bike Showroom',
-    phone: '+92 321 4458901',
-    email: 'bilal@macleodbikes.pk',
-    location: 'Main Macleod Road Bike Plaza, Lahore',
-    status: 'Active'
-  },
-  {
-    id: 'pk-so-5',
-    showroomName: 'Akbar Road Riders Gallery',
-    ownerName: 'Kamran Siddiqui',
+    id: 'pk-sample-2',
+    showroomName: 'Sample Bike Showroom (Example)',
+    ownerName: 'Example Bike Owner',
     city: 'Karachi',
     category: 'Bike Showroom',
-    phone: '+92 312 2093345',
-    email: 'kamran@akbarriders.pk',
-    location: 'Shop 14, Main Akbar Road, Saddar, Karachi',
-    status: 'Active'
-  },
-  {
-    id: 'pk-so-6',
-    showroomName: 'Potohar Heavy Bikes & Cars',
-    ownerName: 'Faisal Nadeem',
-    city: 'Rawalpindi',
-    category: 'Bike Showroom',
-    phone: '+92 334 5567812',
-    email: 'faisal@potoharbikes.pk',
-    location: 'Murree Road, Committee Chowk, Rawalpindi',
-    status: 'In Active'
-  },
-  {
-    id: 'pk-so-7',
-    showroomName: 'Chenab Auto Imperial',
-    ownerName: 'Zain Raza Gillani',
-    city: 'Faisalabad',
-    category: 'Car Showroom',
-    phone: '+92 301 7654321',
-    email: 'zain@chenabauto.pk',
-    location: 'Main Sargodha Road Auto Hub, Faisalabad',
-    status: 'Active'
-  },
-  {
-    id: 'pk-so-8',
-    showroomName: 'Multan Cantonment Motors',
-    ownerName: 'Hamza Qureshi',
-    city: 'Multan',
-    category: 'Car Showroom',
-    phone: '+92 306 9981123',
-    email: 'hamza@multancanttmotors.pk',
-    location: 'Abdali Road, Multan Cantt',
-    status: 'In Active'
+    phone: '+92 300 0000002',
+    email: 'sample.bike@example.com',
+    location: 'Saddar Road (Sample Address)',
+    status: 'In Active',
+    isSample: true
   }
 ];
 
 function getPkShowroomOwners() {
-  let list = [];
   try {
-    const raw = localStorage.getItem('desihood_pk_showroom_owners');
-    list = raw ? JSON.parse(raw) : [...INITIAL_PK_SHOWROOM_OWNERS];
-  } catch (e) {
-    list = [...INITIAL_PK_SHOWROOM_OWNERS];
-  }
-
-  // Also merge any Pakistan dealers created in appState.dealers that aren't in the list yet
-  const existingIds = new Set(list.map(x => x.id));
-  const pkDealers = (appState.dealers || []).filter(d => d.country === 'PK');
-  let addedFromDealers = false;
-  pkDealers.forEach(d => {
-    const mappedId = `pk-dealer-${d.id}`;
-    if (!existingIds.has(mappedId) && !list.some(x => (x.email || '').toLowerCase() === (d.email || '').toLowerCase())) {
-      addedFromDealers = true;
-      const locParts = String(d.location || '').split(',').map(s => s.trim()).filter(Boolean);
-      const city = locParts[0] || 'Lahore';
-      list.push({
-        id: mappedId,
-        showroomName: d.name,
-        ownerName: d.owner || 'Showroom Owner',
-        city,
-        category: 'Car Showroom',
-        phone: d.whatsapp || d.phone || '+92 300 0000000',
-        email: d.email || 'info@desihoodcars.pk',
-        location: d.address || d.location || city,
-        status: d.banned ? 'In Active' : 'Active'
-      });
+    if (localStorage.getItem('desihood_pk_showroom_owners')) {
+      localStorage.removeItem('desihood_pk_showroom_owners');
     }
-  });
-  if (addedFromDealers || !localStorage.getItem('desihood_pk_showroom_owners')) {
-    localStorage.setItem('desihood_pk_showroom_owners', JSON.stringify(list));
+    const raw = localStorage.getItem(PK_SHOWROOM_STORAGE_KEY);
+    if (raw === null) {
+      localStorage.setItem(PK_SHOWROOM_STORAGE_KEY, JSON.stringify(PK_SAMPLE_SHOWROOM_OWNERS));
+      return [...PK_SAMPLE_SHOWROOM_OWNERS];
+    }
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    return [...PK_SAMPLE_SHOWROOM_OWNERS];
   }
-  return list;
 }
 
 function savePkShowroomOwners(list) {
-  localStorage.setItem('desihood_pk_showroom_owners', JSON.stringify(list));
+  localStorage.setItem(PK_SHOWROOM_STORAGE_KEY, JSON.stringify(list));
+}
+
+async function syncShowroomOwnersPkFromCloud() {
+  if (typeof sbLoadPkShowroomOwners !== 'function') return;
+  const cloudRows = await sbLoadPkShowroomOwners();
+  if (!Array.isArray(cloudRows)) return;
+
+  if (cloudRows.length > 0) {
+    const localList = getPkShowroomOwners();
+    const cloudIds = new Set(cloudRows.map(r => r.id));
+    const localOnlyReal = localList.filter(item => !item.isSample && !cloudIds.has(item.id));
+    savePkShowroomOwners([...cloudRows, ...localOnlyReal]);
+    if (appState.isOwnerAuthenticated && appState.currentView === 'showroom-owners-pk') {
+      renderShowroomOwnersPK();
+    }
+  }
 }
 
 function openShowroomOwnersPKPage() {
@@ -5301,14 +5236,62 @@ function togglePkShowroomAddForm(forceShow) {
   } else {
     box.classList.toggle('hidden');
   }
+  if (box.classList.contains('hidden')) {
+    resetPkShowroomForm();
+  }
 }
 
-function handleAddPkShowroomOwner(e) {
+function resetPkShowroomForm() {
+  const form = document.getElementById('pk-showroom-owner-form');
+  if (form) form.reset();
+  const editIdEl = document.getElementById('pk-so-edit-id');
+  const titleEl = document.getElementById('pk-showroom-form-title');
+  const submitBtn = document.getElementById('pk-so-submit-btn');
+  if (editIdEl) editIdEl.value = '';
+  if (titleEl) titleEl.textContent = 'Add New Pakistan Showroom Owner';
+  if (submitBtn) submitBtn.textContent = 'Save Showroom Owner';
+}
+
+function openAddPkShowroomOwnerForm() {
+  if (!requireOwnerAccess()) return;
+  resetPkShowroomForm();
+  togglePkShowroomAddForm(true);
+  document.getElementById('pk-so-name')?.focus();
+}
+
+function editPkShowroomOwner(id) {
+  if (!requireOwnerAccess()) return;
+  const item = getPkShowroomOwners().find(s => s.id === id);
+  if (!item) return;
+
+  document.getElementById('pk-so-edit-id').value = item.id;
+  document.getElementById('pk-so-name').value = item.showroomName || '';
+  document.getElementById('pk-so-owner').value = item.ownerName || '';
+  document.getElementById('pk-so-city').value = item.city || '';
+  document.getElementById('pk-so-category').value = item.category || 'Car Showroom';
+  document.getElementById('pk-so-phone').value = item.phone || '';
+  document.getElementById('pk-so-email').value = item.email || '';
+  document.getElementById('pk-so-location').value = item.location || '';
+  document.getElementById('pk-so-status').value = item.status || 'Active';
+
+  const titleEl = document.getElementById('pk-showroom-form-title');
+  const submitBtn = document.getElementById('pk-so-submit-btn');
+  if (titleEl) titleEl.textContent = `Edit Showroom Owner: ${item.showroomName}`;
+  if (submitBtn) submitBtn.textContent = 'Update Showroom Owner';
+
+  togglePkShowroomAddForm(true);
+  document.getElementById('pk-showroom-add-box')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function handleSavePkShowroomOwner(e) {
   e.preventDefault();
   if (!requireOwnerAccess()) return;
+
   const list = getPkShowroomOwners();
-  const entry = {
-    id: 'pk-so-' + Date.now(),
+  const editId = document.getElementById('pk-so-edit-id')?.value.trim();
+
+  const record = {
+    id: editId || ('pk-so-' + Date.now()),
     showroomName: document.getElementById('pk-so-name').value.trim(),
     ownerName: document.getElementById('pk-so-owner').value.trim(),
     city: document.getElementById('pk-so-city').value.trim(),
@@ -5316,14 +5299,28 @@ function handleAddPkShowroomOwner(e) {
     phone: document.getElementById('pk-so-phone').value.trim(),
     email: document.getElementById('pk-so-email').value.trim(),
     location: document.getElementById('pk-so-location').value.trim(),
-    status: document.getElementById('pk-so-status').value
+    status: document.getElementById('pk-so-status').value,
+    isSample: false
   };
-  list.unshift(entry);
+
+  if (editId) {
+    const idx = list.findIndex(s => s.id === editId);
+    if (idx !== -1) list[idx] = record;
+    else list.unshift(record);
+    showToast('Showroom Updated', `${record.showroomName} updated and saved.`, 'success');
+  } else {
+    list.unshift(record);
+    showToast('Showroom Added', `${record.showroomName} saved to Showroom Owners Pakistan.`, 'success');
+  }
+
   savePkShowroomOwners(list);
-  e.target.reset();
+  if (typeof sbUpsertRecord === 'function' && typeof mapShowroomOwnerToRow === 'function') {
+    sbUpsertRecord('showroom_owners_pk', mapShowroomOwnerToRow(record));
+  }
+
+  resetPkShowroomForm();
   togglePkShowroomAddForm(false);
   renderShowroomOwnersPK();
-  showToast('Showroom Added', `${entry.showroomName} added to Showroom Owners Pakistan.`, 'success');
 }
 
 function togglePkShowroomStatus(id) {
@@ -5333,55 +5330,40 @@ function togglePkShowroomStatus(id) {
   if (!item) return;
   item.status = item.status === 'Active' ? 'In Active' : 'Active';
   savePkShowroomOwners(list);
+  if (!item.isSample && typeof sbUpsertRecord === 'function' && typeof mapShowroomOwnerToRow === 'function') {
+    sbUpsertRecord('showroom_owners_pk', mapShowroomOwnerToRow(item));
+  }
   renderShowroomOwnersPK();
   showToast('Status Updated', `${item.showroomName} is now ${item.status}.`, 'info');
 }
 
 function deletePkShowroomOwner(id) {
   if (!requireOwnerAccess()) return;
-  if (!confirm('Remove this showroom owner from Pakistan directory?')) return;
+  if (!confirm('Delete this showroom owner permanently?')) return;
   const list = getPkShowroomOwners().filter(s => s.id !== id);
   savePkShowroomOwners(list);
+  if (typeof sbDeleteRecord === 'function') {
+    sbDeleteRecord('showroom_owners_pk', id);
+  }
   renderShowroomOwnersPK();
-  showToast('Removed', 'Showroom owner removed from directory.', 'info');
+  showToast('Deleted', 'Showroom owner removed.', 'info');
 }
 
-function renderShowroomOwnersPK() {
-  if (!appState.isOwnerAuthenticated) return;
-  const tbody = document.getElementById('pk-showroom-owners-tbody');
-  if (!tbody) return;
+function clearSamplePkShowroomOwners() {
+  if (!requireOwnerAccess()) return;
+  const remaining = getPkShowroomOwners().filter(s => !s.isSample && !String(s.id).startsWith('pk-sample-'));
+  savePkShowroomOwners(remaining);
+  renderShowroomOwnersPK();
+  showToast('Samples Cleared', 'Sample rows removed. Table is ready for your real showroom data.', 'info');
+}
 
-  const list = getPkShowroomOwners();
-
-  // Stats
-  const elTotal = document.getElementById('pk-so-stat-total');
-  const elCars = document.getElementById('pk-so-stat-cars');
-  const elBikes = document.getElementById('pk-so-stat-bikes');
-  const elActive = document.getElementById('pk-so-stat-active');
-  const elInactive = document.getElementById('pk-so-stat-inactive');
-
-  if (elTotal) elTotal.textContent = list.length;
-  if (elCars) elCars.textContent = list.filter(s => s.category === 'Car Showroom').length;
-  if (elBikes) elBikes.textContent = list.filter(s => s.category === 'Bike Showroom').length;
-  if (elActive) elActive.textContent = list.filter(s => s.status === 'Active').length;
-  if (elInactive) elInactive.textContent = list.filter(s => s.status !== 'Active').length;
-
-  // Populate city dropdown
-  const citySelect = document.getElementById('pk-so-filter-city');
-  const currentCity = citySelect ? citySelect.value : 'all';
-  if (citySelect) {
-    const cities = [...new Set(list.map(s => s.city).filter(Boolean))].sort();
-    citySelect.innerHTML = `<option value="all">All Cities (${cities.length})</option>` +
-      cities.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
-    if (cities.includes(currentCity)) citySelect.value = currentCity;
-  }
-
+function getFilteredPkShowroomOwners(list) {
   const keyword = (document.getElementById('pk-so-search')?.value || '').toLowerCase().trim();
   const cityFilter = document.getElementById('pk-so-filter-city')?.value || 'all';
   const catFilter = document.getElementById('pk-so-filter-category')?.value || 'all';
   const statusFilter = document.getElementById('pk-so-filter-status')?.value || 'all';
 
-  const filtered = list.filter(item => {
+  return list.filter(item => {
     if (cityFilter !== 'all' && item.city !== cityFilter) return false;
     if (catFilter !== 'all' && item.category !== catFilter) return false;
     if (statusFilter !== 'all' && item.status !== statusFilter) return false;
@@ -5391,12 +5373,97 @@ function renderShowroomOwnersPK() {
     }
     return true;
   });
+}
+
+function exportPkShowroomOwnersCsv() {
+  if (!requireOwnerAccess()) return;
+  const rows = getFilteredPkShowroomOwners(getPkShowroomOwners());
+  if (!rows.length) {
+    showToast('Nothing to Export', 'Add showroom owners first before exporting to Excel / CSV.', 'info');
+    return;
+  }
+
+  const headers = [
+    'Showroom Name',
+    'Showroom Owner Name',
+    'City',
+    'Category',
+    'Phone Number',
+    'Email Address',
+    'Location',
+    'Status'
+  ];
+
+  const csvEscape = (val) => `"${String(val ?? '').replace(/"/g, '""')}"`;
+  const lines = [
+    headers.map(csvEscape).join(','),
+    ...rows.map(r => [
+      r.showroomName,
+      r.ownerName,
+      r.city,
+      r.category,
+      r.phone,
+      r.email,
+      r.location,
+      r.status
+    ].map(csvEscape).join(','))
+  ];
+
+  const bom = '\uFEFF';
+  const blob = new Blob([bom + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const today = new Date().toISOString().split('T')[0];
+  a.href = url;
+  a.download = `showroom-owners-pakistan-${today}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  showToast('Exported to CSV', `Downloaded ${rows.length} showroom owner rows for Excel.`, 'success');
+}
+
+function renderShowroomOwnersPK() {
+  if (!appState.isOwnerAuthenticated) return;
+  const tbody = document.getElementById('pk-showroom-owners-tbody');
+  if (!tbody) return;
+
+  const list = getPkShowroomOwners();
+
+  const elTotal = document.getElementById('pk-so-stat-total');
+  const elCars = document.getElementById('pk-so-stat-cars');
+  const elBikes = document.getElementById('pk-so-stat-bikes');
+  const elActive = document.getElementById('pk-so-stat-active');
+  const elInactive = document.getElementById('pk-so-stat-inactive');
+  const clearSampleBtn = document.getElementById('btn-clear-pk-samples');
+
+  if (elTotal) elTotal.textContent = list.length;
+  if (elCars) elCars.textContent = list.filter(s => s.category === 'Car Showroom').length;
+  if (elBikes) elBikes.textContent = list.filter(s => s.category === 'Bike Showroom').length;
+  if (elActive) elActive.textContent = list.filter(s => s.status === 'Active').length;
+  if (elInactive) elInactive.textContent = list.filter(s => s.status !== 'Active').length;
+  if (clearSampleBtn) {
+    const hasSamples = list.some(s => s.isSample || String(s.id).startsWith('pk-sample-'));
+    clearSampleBtn.classList.toggle('hidden', !hasSamples);
+  }
+
+  const citySelect = document.getElementById('pk-so-filter-city');
+  const currentCity = citySelect ? citySelect.value : 'all';
+  if (citySelect) {
+    const cities = [...new Set(list.map(s => s.city).filter(Boolean))].sort();
+    citySelect.innerHTML = `<option value="all">All Cities (${cities.length})</option>` +
+      cities.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+    if (cities.includes(currentCity)) citySelect.value = currentCity;
+  }
+
+  const filtered = getFilteredPkShowroomOwners(list);
 
   if (!filtered.length) {
     tbody.innerHTML = `
       <tr>
         <td colspan="9" class="py-10 px-4 text-center text-slate-400">
-          No showroom owners match your current search or filters.
+          ${list.length ? 'No showroom owners match your search or filters.' : 'No showroom owners added yet. Click "+ Add New Owner" above to add real showroom owners.'}
         </td>
       </tr>
     `;
@@ -5406,10 +5473,14 @@ function renderShowroomOwnersPK() {
   tbody.innerHTML = filtered.map(item => {
     const isActive = item.status === 'Active';
     const isBike = item.category === 'Bike Showroom';
+    const isSample = Boolean(item.isSample || String(item.id).startsWith('pk-sample-'));
     const cleanPhone = String(item.phone || '').replace(/[^0-9+]/g, '');
     return `
-      <tr class="hover:bg-slate-900/60 transition-colors">
-        <td class="py-3.5 px-4 font-extrabold text-white whitespace-nowrap">${escapeHtml(item.showroomName)}</td>
+      <tr class="hover:bg-slate-900/60 transition-colors ${isSample ? 'bg-amber-500/5' : ''}">
+        <td class="py-3.5 px-4 font-extrabold text-white whitespace-nowrap">
+          <span>${escapeHtml(item.showroomName)}</span>
+          ${isSample ? '<span class="ml-1.5 px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 text-[9px] font-bold uppercase">Sample</span>' : ''}
+        </td>
         <td class="py-3.5 px-4 text-slate-200 font-semibold whitespace-nowrap">${escapeHtml(item.ownerName)}</td>
         <td class="py-3.5 px-4 text-amber-400 font-bold whitespace-nowrap">${escapeHtml(item.city)}</td>
         <td class="py-3.5 px-4 whitespace-nowrap">
@@ -5430,11 +5501,11 @@ function renderShowroomOwnersPK() {
           </button>
         </td>
         <td class="py-3.5 px-4 whitespace-nowrap text-right space-x-1.5">
-          <button onclick="togglePkShowroomStatus('${escapeHtml(item.id)}')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold border border-slate-700">
-            ${isActive ? 'Set In Active' : 'Set Active'}
+          <button onclick="editPkShowroomOwner('${escapeHtml(item.id)}')" title="Edit" class="px-2.5 py-1 rounded-lg bg-sky-500/15 hover:bg-sky-500 text-sky-400 hover:text-slate-950 border border-sky-500/30 text-[11px] font-bold transition-colors">
+            Edit
           </button>
-          <button onclick="deletePkShowroomOwner('${escapeHtml(item.id)}')" title="Delete" class="p-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500 text-rose-400 hover:text-white border border-rose-500/30 transition-colors inline-flex items-center">
-            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+          <button onclick="deletePkShowroomOwner('${escapeHtml(item.id)}')" title="Delete" class="px-2.5 py-1 rounded-lg bg-rose-500/15 hover:bg-rose-500 text-rose-400 hover:text-white border border-rose-500/30 text-[11px] font-bold transition-colors">
+            Delete
           </button>
         </td>
       </tr>

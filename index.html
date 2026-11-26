@@ -2360,12 +2360,19 @@
           </div>
 
           <div class="flex flex-wrap items-center gap-2 shrink-0">
-            <button onclick="togglePkShowroomAddForm()" class="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold flex items-center space-x-1.5 transition-colors">
+            <button onclick="openAddPkShowroomOwnerForm()" class="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold flex items-center space-x-1.5 transition-colors">
               <i data-lucide="plus-circle" class="w-4 h-4"></i>
-              <span>Add Showroom Owner</span>
+              <span>Add New Owner</span>
+            </button>
+            <button onclick="exportPkShowroomOwnersCsv()" class="px-4 py-2.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500 text-emerald-400 hover:text-slate-950 border border-emerald-500/35 text-xs font-extrabold flex items-center space-x-1.5 transition-colors">
+              <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+              <span>Export Excel / CSV</span>
+            </button>
+            <button onclick="clearSamplePkShowroomOwners()" id="btn-clear-pk-samples" class="px-3.5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 text-xs font-bold transition-colors">
+              Clear Samples
             </button>
             <button onclick="openOwnerConsole()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 transition-colors">
-              Back to Admin Panel
+              Admin Panel
             </button>
             <button onclick="lockOwnerConsole()" class="px-4 py-2.5 rounded-xl bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 text-xs font-bold border border-rose-500/40 flex items-center space-x-1.5 transition-colors">
               <i data-lucide="lock" class="w-3.5 h-3.5"></i>
@@ -2399,15 +2406,16 @@
         </div>
       </div>
 
-      <!-- Collapsible Add Showroom Owner Form -->
+      <!-- Collapsible Add / Edit Showroom Owner Form -->
       <div id="pk-showroom-add-box" class="hidden glass-panel p-6 rounded-3xl border border-emerald-500/35">
         <div class="flex items-center justify-between mb-4">
-          <h3 class="text-base font-extrabold text-white heading-font">Add New Pakistan Showroom Owner</h3>
-          <button onclick="togglePkShowroomAddForm(false)" class="text-slate-400 hover:text-white text-xs font-bold">Cancel</button>
+          <h3 id="pk-showroom-form-title" class="text-base font-extrabold text-white heading-font">Add New Pakistan Showroom Owner</h3>
+          <button type="button" onclick="togglePkShowroomAddForm(false)" class="text-slate-400 hover:text-white text-xs font-bold">Cancel</button>
         </div>
-        <form onsubmit="handleAddPkShowroomOwner(event)" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <form id="pk-showroom-owner-form" onsubmit="handleSavePkShowroomOwner(event)" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <input type="hidden" id="pk-so-edit-id" value="">
           <input type="text" id="pk-so-name" required placeholder="Showroom Name *" class="bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500">
-          <input type="text" id="pk-so-owner" required placeholder="Showroom Owner Name *" class="bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500">
+          <input type="text" id="pk-so-owner" required placeholder="Owner Name *" class="bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500">
           <input type="text" id="pk-so-city" required placeholder="City (e.g. Lahore) *" class="bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500">
           <select id="pk-so-category" class="bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500">
             <option value="Car Showroom">Car Showroom</option>
@@ -2415,13 +2423,13 @@
           </select>
           <input type="text" id="pk-so-phone" required placeholder="Phone Number (+92...) *" class="bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500">
           <input type="email" id="pk-so-email" required placeholder="Email Address *" class="bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500">
-          <input type="text" id="pk-so-location" required placeholder="Location / Street Address *" class="bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500">
+          <input type="text" id="pk-so-location" required placeholder="Address / Location *" class="bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500">
           <select id="pk-so-status" class="bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500">
             <option value="Active">Active</option>
             <option value="In Active">In Active</option>
           </select>
-          <button type="submit" class="sm:col-span-2 lg:col-span-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs uppercase tracking-wider transition-colors">
-            Save Showroom Owner to Directory
+          <button type="submit" id="pk-so-submit-btn" class="sm:col-span-2 lg:col-span-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs uppercase tracking-wider transition-colors">
+            Save Showroom Owner
           </button>
         </form>
       </div>

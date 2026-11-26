@@ -146,6 +146,21 @@ CREATE TABLE IF NOT EXISTS public.inquiries (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- 8. SHOWROOM OWNERS PAKISTAN TABLE (ADMIN DIRECTORY)
+CREATE TABLE IF NOT EXISTS public.showroom_owners_pk (
+  id TEXT PRIMARY KEY,
+  showroom_name TEXT NOT NULL,
+  owner_name TEXT NOT NULL,
+  city TEXT NOT NULL,
+  category TEXT NOT NULL DEFAULT 'Car Showroom',
+  phone TEXT NOT NULL,
+  email TEXT NOT NULL,
+  location TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'Active',
+  is_sample BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 -- Performance Indexes
 CREATE INDEX IF NOT EXISTS idx_cars_dealer_id ON public.cars(dealer_id);
 CREATE INDEX IF NOT EXISTS idx_cars_country_status ON public.cars(country, status);
@@ -164,6 +179,7 @@ ALTER TABLE public.buyer_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.spare_parts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.blogs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.inquiries ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.showroom_owners_pk ENABLE ROW LEVEL SECURITY;
 
 -- Public Client Policies (using explicit TO anon, authenticated clauses)
 CREATE POLICY "public_read_dealers" ON public.dealers FOR SELECT TO anon, authenticated USING (true);
@@ -195,3 +211,8 @@ CREATE POLICY "public_delete_blogs" ON public.blogs FOR DELETE TO anon, authenti
 
 CREATE POLICY "public_read_inquiries" ON public.inquiries FOR SELECT TO anon, authenticated USING (true);
 CREATE POLICY "public_write_inquiries" ON public.inquiries FOR INSERT TO anon, authenticated WITH CHECK (true);
+
+CREATE POLICY "public_read_showroom_owners_pk" ON public.showroom_owners_pk FOR SELECT TO anon, authenticated USING (true);
+CREATE POLICY "public_write_showroom_owners_pk" ON public.showroom_owners_pk FOR INSERT TO anon, authenticated WITH CHECK (true);
+CREATE POLICY "public_update_showroom_owners_pk" ON public.showroom_owners_pk FOR UPDATE TO anon, authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "public_delete_showroom_owners_pk" ON public.showroom_owners_pk FOR DELETE TO anon, authenticated USING (true);
