@@ -756,72 +756,325 @@ function handlePartSubmit(e) {
 }
 
 // ==========================================
-// MARKETPLACE & FILTERING WITH AUTOMATED SOLD OUT BOARD
+// ADVANCED CAR SEARCH, FILTERING & SORTING ENGINE
 // ==========================================
 let filterDebounceTimer;
 function debounceFilter() {
   clearTimeout(filterDebounceTimer);
-  filterDebounceTimer = setTimeout(filterCars, 250);
+  filterDebounceTimer = setTimeout(filterCars, 200);
 }
 
-function updatePriceSlider(val) {
-  const display = document.getElementById("price-slider-display");
-  if (parseInt(val) >= 220000) {
-    display.textContent = formatCurrency(220000) + "+";
-  } else {
-    display.textContent = formatCurrency(val);
+function parseEngineCapacityCC(car) {
+  const fuel = String(car.fuelType || '').toLowerCase();
+  const eng = String(car.engine || '').toLowerCase();
+  if (fuel === 'electric' || /\b(ev|e-motor|e-motors|tri-motor|dual electric|electric motor|stla)\b/i.test(eng)) {
+    return 0;
   }
+  const literMatch = eng.match(/(\d+(?:\.\d+)?)\s*l\b/i);
+  if (literMatch) return Math.round(parseFloat(literMatch[1]) * 1000);
+  const ccMatch = eng.match(/(\d{3,5})\s*cc\b/i);
+  if (ccMatch) return parseInt(ccMatch[1], 10);
+  return null;
+}
+
+function isCarNewCondition(car) {
+  const cond = String(car.condition || '').toLowerCase();
+  if (cond === 'new' || cond === 'brand new') return true;
+  if (cond === 'like new' && (Number(car.mileage) || 0) <= 500) return true;
+  return false;
+}
+
+function populateAdvancedSearchOptions() {
+  const cars = Array.isArray(appState.cars) ? appState.cars : [];
+  const dealers = Array.isArray(appState.dealers) ? appState.dealers : [];
+
+  // 1. Makes
+  const makeSet = new Set(cars.map(c => c.make).filter(Boolean));
+  const makes = Array.from(makeSet).sort((a, b) => a.localeCompare(b));
+  const quickMake = document.getElementById('quick-make');
+  const filterMake = document.getElementById('filter-make');
+  [quickMake, filterMake].forEach(sel => {
+    if (!sel) return;
+    const prev = sel.value;
+    sel.innerHTML = '<option value="">All Makes</option>' +
+      makes.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
+    if (prev && makeSet.has(prev)) sel.value = prev;
+  });
+
+  // 2. Models datalist (filtered by chosen make if set)
+  const selectedMake = filterMake?.value || quickMake?.value || '';
+  const modelSet = new Set(
+    cars
+      .filter(c => !selectedMake || c.make === selectedMake)
+      .map(c => c.model)
+      .filter(Boolean)
+  );
+  const modelsDatalist = document.getElementById('car-models-datalist');
+  if (modelsDatalist) {
+    modelsDatalist.innerHTML = Array.from(modelSet)
+      .sort((a, b) => a.localeCompare(b))
+      .map(m => `<option value="${escapeHtml(m)}"></option>`)
+      .join('');
+  }
+
+  // 3. Body Types dynamically preserving core presets
+  const bodyPresets = ['Sedan', 'SUV', 'Coupe', 'Hatchback', 'Truck', 'Wagon', 'Convertible'];
+  const bodySet = new Set(bodyPresets);
+  cars.forEach(c => { if (c.bodyStyle) bodySet.add(c.bodyStyle); });
+  const bodyList = Array.from(bodySet);
+  const quickBody = document.getElementById('quick-body-style');
+  const filterBody = document.getElementById('filter-body-type');
+  [quickBody, filterBody].forEach(sel => {
+    if (!sel) return;
+    const prev = sel.value;
+    sel.innerHTML = '<option value="">All Body Types</option>' +
+      bodyList.map(b => `<option value="${escapeHtml(b)}">${escapeHtml(b)}</option>`).join('');
+    if (prev && bodySet.has(prev)) sel.value = prev;
+  });
+
+  // 4. Locations datalist (from dealers + cars)
+  const locSet = new Set();
+  dealers.forEach(d => { if (d.location) locSet.add(d.location); });
+  cars.forEach(c => {
+    if (c.location) locSet.add(c.location);
+    if (c.city) locSet.add(c.city);
+  });
+  const locDatalist = document.getElementById('car-locations-datalist');
+  if (locDatalist) {
+    locDatalist.innerHTML = Array.from(locSet)
+      .sort((a, b) => a.localeCompare(b))
+      .map(l => `<option value="${escapeHtml(l)}"></option>`)
+      .join('');
+  }
+
+  // 5. Years From / To
+  const years = cars.map(c => parseInt(c.year, 10)).filter(y => !isNaN(y));
+  const minYear = Math.min(2015, ...(years.length ? years : [2020]));
+  const maxYear = Math.max(2026, ...(years.length ? years : [2026]));
+  const yearMinEl = document.getElementById('filter-year-min');
+  const yearMaxEl = document.getElementById('filter-year-max');
+  const yearOpts = [];
+  for (let y = maxYear; y >= minYear; y--) yearOpts.push(`<option value="${y}">${y}</option>`);
+  if (yearMinEl) {
+    const prev = yearMinEl.value;
+    yearMinEl.innerHTML = '<option value="">Year From</option>' + yearOpts.join('');
+    if (prev) yearMinEl.value = prev;
+  }
+  if (yearMaxEl) {
+    const prev = yearMaxEl.value;
+    yearMaxEl.innerHTML = '<option value="">Year To</option>' + yearOpts.join('');
+    if (prev) yearMaxEl.value = prev;
+  }
+
+  // 6. Currency badge on price inputs
+  const curBadge = document.getElementById('adv-price-currency-label');
+  if (curBadge) {
+    const cur = CURRENCIES[appState.currentCurrency] || CURRENCIES.USD;
+    curBadge.textContent = cur.label || appState.currentCurrency;
+  }
+}
+
+function updateSegmentedPills() {
+  const vt = document.querySelector('input[name="vehicleType"]:checked')?.value || 'all';
+  document.querySelectorAll('[data-vt-pill]').forEach(el => {
+    const active = el.getAttribute('data-vt-pill') === vt;
+    el.className = active ? 'font-bold text-red-400' : 'font-medium text-slate-300';
+  });
+
+  const tr = document.querySelector('input[name="transmission"]:checked')?.value || 'all';
+  document.querySelectorAll('[data-tr-pill]').forEach(el => {
+    const active = el.getAttribute('data-tr-pill') === tr;
+    el.className = active ? 'font-bold text-red-400' : 'font-medium text-slate-300';
+  });
+}
+
+function onVehicleTypeChange(val) {
+  const quickCond = document.getElementById('quick-condition');
+  if (quickCond) quickCond.value = val;
+  updateSegmentedPills();
   filterCars();
+}
+
+function onTransmissionChange() {
+  updateSegmentedPills();
+  filterCars();
+}
+
+function onFilterMakeChange() {
+  const quickMake = document.getElementById('quick-make');
+  const filterMake = document.getElementById('filter-make');
+  if (quickMake && filterMake) quickMake.value = filterMake.value;
+  populateAdvancedSearchOptions();
+  filterCars();
+}
+
+function onFilterModelInput() {
+  const qm = document.getElementById('quick-model');
+  const fm = document.getElementById('filter-model');
+  if (qm && fm) qm.value = fm.value;
+  debounceFilter();
+}
+
+function onFilterLocationInput() {
+  const ql = document.getElementById('quick-location');
+  const fl = document.getElementById('filter-location');
+  if (ql && fl) ql.value = fl.value;
+  debounceFilter();
+}
+
+function onFilterBodyChange() {
+  const qb = document.getElementById('quick-body-style');
+  const fb = document.getElementById('filter-body-type');
+  if (qb && fb) qb.value = fb.value;
+  filterCars();
+}
+
+function syncQuickToSidebar(field) {
+  if (field === 'make') {
+    const q = document.getElementById('quick-make');
+    const f = document.getElementById('filter-make');
+    if (q && f) f.value = q.value;
+    populateAdvancedSearchOptions();
+    filterCars();
+  } else if (field === 'model') {
+    const q = document.getElementById('quick-model');
+    const f = document.getElementById('filter-model');
+    if (q && f) f.value = q.value;
+    debounceFilter();
+  } else if (field === 'location') {
+    const q = document.getElementById('quick-location');
+    const f = document.getElementById('filter-location');
+    if (q && f) f.value = q.value;
+    debounceFilter();
+  } else if (field === 'body') {
+    const q = document.getElementById('quick-body-style');
+    const f = document.getElementById('filter-body-type');
+    if (q && f) f.value = q.value;
+    filterCars();
+  } else if (field === 'vehicleType') {
+    const val = document.getElementById('quick-condition')?.value || 'all';
+    const radio = document.querySelector(`input[name="vehicleType"][value="${val}"]`);
+    if (radio) radio.checked = true;
+    updateSegmentedPills();
+    filterCars();
+  }
 }
 
 function applyQuickSearch() {
-  const make = document.getElementById("quick-make").value;
-  const body = document.getElementById("quick-body-style").value;
-  const price = parseInt(document.getElementById("quick-max-price").value);
-
-  appState.activeFilter.make = make;
-  appState.activeFilter.bodyStyle = body;
-  appState.activeFilter.maxPrice = price;
-
-  const slider = document.getElementById("filter-price-range");
-  if (slider) {
-    slider.value = Math.min(price, 220000);
-    updatePriceSlider(slider.value);
-  }
-
+  syncQuickToSidebar('make');
+  syncQuickToSidebar('model');
+  syncQuickToSidebar('location');
+  syncQuickToSidebar('body');
+  syncQuickToSidebar('vehicleType');
   filterCars();
-  const grid = document.getElementById("cars-grid");
+  const grid = document.getElementById("inventory-showcase-section") || document.getElementById("cars-grid");
   if (grid) grid.scrollIntoView({ behavior: "smooth" });
 }
 
 function resetFilters() {
-  document.getElementById("filter-keyword").value = "";
-  document.getElementById("quick-make").value = "";
-  document.getElementById("quick-body-style").value = "";
-  document.getElementById("quick-max-price").value = "9999999";
-  document.getElementById("filter-price-range").value = 220000;
-  document.getElementById("price-slider-display").textContent = formatCurrency(220000) + "+";
-  document.getElementById("sort-by").value = "featured";
+  const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+  setVal("filter-keyword", "");
+  setVal("filter-make", "");
+  setVal("quick-make", "");
+  setVal("filter-model", "");
+  setVal("quick-model", "");
+  setVal("filter-location", "");
+  setVal("quick-location", "");
+  setVal("filter-year-min", "");
+  setVal("filter-year-max", "");
+  setVal("filter-min-price", "");
+  setVal("filter-max-price", "");
+  setVal("filter-min-mileage", "");
+  setVal("filter-max-mileage", "");
+  setVal("filter-body-type", "");
+  setVal("quick-body-style", "");
+  setVal("filter-engine-capacity", "all");
+  setVal("quick-condition", "all");
+  setVal("sort-by", "latest");
 
   document.querySelectorAll('input[name="fuel"]').forEach(el => el.checked = false);
   document.querySelectorAll('input[name="condition"]').forEach(el => el.checked = false);
   document.querySelectorAll('input[name="transmission"]').forEach(el => el.checked = (el.value === 'all'));
+  document.querySelectorAll('input[name="vehicleType"]').forEach(el => el.checked = (el.value === 'all'));
 
   const chkActive = document.getElementById("filter-show-active");
   const chkSold = document.getElementById("filter-show-sold");
   if (chkActive) chkActive.checked = true;
   if (chkSold) chkSold.checked = true;
 
+  updateSegmentedPills();
+  populateAdvancedSearchOptions();
   filterCars();
   showToast("Filters Reset", "Showing all vehicles", "info");
 }
 
+function renderActiveFilterChips(filters) {
+  const container = document.getElementById("active-filter-chips");
+  if (!container) return;
+
+  const chips = [];
+  const addChip = (label, clearFn) => chips.push({ label, clearFn });
+
+  if (filters.keyword) addChip(`Keyword: "${filters.keyword}"`, `document.getElementById('filter-keyword').value=''; filterCars();`);
+  if (filters.make) addChip(`Make: ${filters.make}`, `document.getElementById('filter-make').value=''; onFilterMakeChange();`);
+  if (filters.model) addChip(`Model: "${filters.model}"`, `document.getElementById('filter-model').value=''; document.getElementById('quick-model').value=''; filterCars();`);
+  if (filters.location) addChip(`Location: "${filters.location}"`, `document.getElementById('filter-location').value=''; document.getElementById('quick-location').value=''; filterCars();`);
+  if (filters.vehicleType !== 'all') addChip(`Type: ${filters.vehicleType === 'new' ? 'New' : 'Used'}`, `onVehicleTypeChange('all'); document.querySelector('input[name="vehicleType"][value="all"]').checked=true; updateSegmentedPills();`);
+  if (filters.yearMin || filters.yearMax) addChip(`Year: ${filters.yearMin || 'Any'} – ${filters.yearMax || 'Any'}`, `document.getElementById('filter-year-min').value=''; document.getElementById('filter-year-max').value=''; filterCars();`);
+  if (filters.rawMinPrice || filters.rawMaxPrice) addChip(`Price: ${filters.rawMinPrice || '0'} – ${filters.rawMaxPrice || 'Any'}`, `document.getElementById('filter-min-price').value=''; document.getElementById('filter-max-price').value=''; filterCars();`);
+  if (filters.minMileage !== null || filters.maxMileage !== null) addChip(`Mileage: ${filters.minMileage ?? 0} – ${filters.maxMileage ?? 'Any'}`, `document.getElementById('filter-min-mileage').value=''; document.getElementById('filter-max-mileage').value=''; filterCars();`);
+  if (filters.bodyType) addChip(`Body: ${filters.bodyType}`, `document.getElementById('filter-body-type').value=''; onFilterBodyChange();`);
+  if (filters.engineCap !== 'all') addChip(`Engine: ${filters.engineCap}`, `document.getElementById('filter-engine-capacity').value='all'; filterCars();`);
+  if (filters.fuelTypes.length) addChip(`Fuel: ${filters.fuelTypes.join(', ')}`, `document.querySelectorAll('input[name="fuel"]').forEach(e=>e.checked=false); filterCars();`);
+  if (filters.transmission !== 'all') addChip(`Trans: ${filters.transmission}`, `document.querySelector('input[name="transmission"][value="all"]').checked=true; onTransmissionChange('all');`);
+  if (filters.conditions.length) addChip(`Grade: ${filters.conditions.join(', ')}`, `document.querySelectorAll('input[name="condition"]').forEach(e=>e.checked=false); filterCars();`);
+
+  if (chips.length === 0) {
+    container.innerHTML = "";
+    container.classList.add("hidden");
+    return;
+  }
+
+  container.classList.remove("hidden");
+  container.innerHTML = chips.map(ch => `
+    <button type="button" onclick="${ch.clearFn}" class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-red-500/15 border border-red-500/35 text-red-300 hover:bg-red-500/25 text-[11px] font-semibold transition-colors">
+      <span>${escapeHtml(ch.label)}</span>
+      <span class="text-red-400 font-bold">&times;</span>
+    </button>
+  `).join('') + `
+    <button type="button" onclick="resetFilters()" class="px-2.5 py-1 rounded-full bg-slate-900 border border-slate-700 text-slate-300 hover:text-white text-[11px] font-semibold transition-colors">
+      Clear All
+    </button>
+  `;
+}
+
 function filterCars() {
   const keyword = (document.getElementById("filter-keyword")?.value || '').toLowerCase().trim();
-  const maxPrice = parseInt(document.getElementById("filter-price-range")?.value || 220000);
-  const quickMake = document.getElementById("quick-make")?.value || '';
-  const quickBody = document.getElementById("quick-body-style")?.value || '';
-  const sortBy = document.getElementById("sort-by")?.value || 'featured';
+  const make = (document.getElementById("filter-make")?.value || document.getElementById("quick-make")?.value || '').trim();
+  const modelQuery = (document.getElementById("filter-model")?.value || document.getElementById("quick-model")?.value || '').toLowerCase().trim();
+  const locationQuery = (document.getElementById("filter-location")?.value || document.getElementById("quick-location")?.value || '').toLowerCase().trim();
+  const bodyType = (document.getElementById("filter-body-type")?.value || document.getElementById("quick-body-style")?.value || '').trim();
+  const engineCap = document.getElementById("filter-engine-capacity")?.value || 'all';
+  const vehicleType = document.querySelector('input[name="vehicleType"]:checked')?.value || document.getElementById("quick-condition")?.value || 'all';
+
+  const yearMinRaw = document.getElementById("filter-year-min")?.value || '';
+  const yearMaxRaw = document.getElementById("filter-year-max")?.value || '';
+  const yearMin = yearMinRaw ? parseInt(yearMinRaw, 10) : null;
+  const yearMax = yearMaxRaw ? parseInt(yearMaxRaw, 10) : null;
+
+  const cur = CURRENCIES[appState.currentCurrency] || CURRENCIES.USD;
+  const rate = cur.rate || 1;
+  const rawMinPrice = document.getElementById("filter-min-price")?.value.trim() || '';
+  const rawMaxPrice = document.getElementById("filter-max-price")?.value.trim() || '';
+  const minPriceUSD = rawMinPrice !== '' ? (parseFloat(rawMinPrice) / rate) : null;
+  const maxPriceUSD = rawMaxPrice !== '' ? (parseFloat(rawMaxPrice) / rate) : null;
+
+  const rawMinMileage = document.getElementById("filter-min-mileage")?.value.trim() || '';
+  const rawMaxMileage = document.getElementById("filter-max-mileage")?.value.trim() || '';
+  const minMileage = rawMinMileage !== '' ? parseFloat(rawMinMileage) : null;
+  const maxMileage = rawMaxMileage !== '' ? parseFloat(rawMaxMileage) : null;
+
+  const sortBy = document.getElementById("sort-by")?.value || 'latest';
 
   const fuelCheckboxes = Array.from(document.querySelectorAll('input[name="fuel"]:checked')).map(el => el.value);
   const conditionCheckboxes = Array.from(document.querySelectorAll('input[name="condition"]:checked')).map(el => el.value);
@@ -840,32 +1093,96 @@ function filterCars() {
     if (isSold && !showSold) return false;
     if (!isSold && !showActive) return false;
 
-    if (car.price > maxPrice && maxPrice < 220000) return false;
-    if (quickMake && car.make !== quickMake) return false;
-    if (quickBody && car.bodyStyle !== quickBody) return false;
-    if (fuelCheckboxes.length > 0 && !fuelCheckboxes.includes(car.fuelType)) return false;
-    if (transRadio !== 'all' && car.transmission !== transRadio) return false;
+    if (make && car.make !== make) return false;
+    if (modelQuery && !`${car.model || ''}`.toLowerCase().includes(modelQuery)) return false;
+
+    if (locationQuery) {
+      const carLocText = `${car.city || ''} ${car.location || ''} ${dealer?.location || ''} ${dealer?.name || ''}`.toLowerCase();
+      if (!carLocText.includes(locationQuery)) return false;
+    }
+
+    const carYear = parseInt(car.year, 10) || 0;
+    if (yearMin !== null && carYear < yearMin) return false;
+    if (yearMax !== null && carYear > yearMax) return false;
+
+    const carPriceUSD = Number(car.price) || 0;
+    if (minPriceUSD !== null && !isNaN(minPriceUSD) && carPriceUSD < minPriceUSD) return false;
+    if (maxPriceUSD !== null && !isNaN(maxPriceUSD) && carPriceUSD > maxPriceUSD) return false;
+
+    const carMileage = Number(car.kilometers ?? car.mileage) || 0;
+    if (minMileage !== null && !isNaN(minMileage) && carMileage < minMileage) return false;
+    if (maxMileage !== null && !isNaN(maxMileage) && carMileage > maxMileage) return false;
+
+    if (bodyType && (car.bodyStyle || '').toLowerCase() !== bodyType.toLowerCase()) return false;
+
+    if (engineCap !== 'all') {
+      const cc = parseEngineCapacityCC(car);
+      if (engineCap === 'ev' && cc !== 0) return false;
+      else if (engineCap === '0-1000' && (cc === null || cc === 0 || cc > 1000)) return false;
+      else if (engineCap === '1001-1500' && (cc === null || cc < 1001 || cc > 1500)) return false;
+      else if (engineCap === '1501-2000' && (cc === null || cc < 1501 || cc > 2000)) return false;
+      else if (engineCap === '2001-3000' && (cc === null || cc < 2001 || cc > 3000)) return false;
+      else if (engineCap === '3001-4500' && (cc === null || cc < 3001 || cc > 4500)) return false;
+      else if (engineCap === '4501+' && (cc === null || cc < 4501)) return false;
+    }
+
+    if (fuelCheckboxes.length > 0) {
+      const cf = String(car.fuelType || '').toLowerCase();
+      const matchedFuel = fuelCheckboxes.some(f => {
+        if (f === 'Gasoline') return cf === 'gasoline' || cf === 'petrol';
+        return cf === f.toLowerCase();
+      });
+      if (!matchedFuel) return false;
+    }
+
+    if (transRadio !== 'all' && String(car.transmission || '').toLowerCase() !== transRadio.toLowerCase()) return false;
+
+    if (vehicleType === 'new' && !isCarNewCondition(car)) return false;
+    if (vehicleType === 'used' && isCarNewCondition(car)) return false;
+
     if (conditionCheckboxes.length > 0 && !conditionCheckboxes.includes(car.condition)) return false;
 
     if (keyword) {
-      const matchText = `${car.make} ${car.model} ${car.year} ${car.bodyStyle} ${car.description} ${car.features?.join(' ')}`.toLowerCase();
+      const matchText = `${car.make} ${car.model} ${car.year} ${car.bodyStyle} ${car.engine || ''} ${car.fuelType || ''} ${car.transmission || ''} ${dealer?.location || ''} ${car.description || ''} ${car.features?.join(' ') || ''}`.toLowerCase();
       if (!matchText.includes(keyword)) return false;
     }
 
     return true;
   });
 
-  if (sortBy === 'price-asc') filtered.sort((a, b) => a.price - b.price);
-  else if (sortBy === 'price-desc') filtered.sort((a, b) => b.price - a.price);
-  else if (sortBy === 'mileage-asc') filtered.sort((a, b) => a.mileage - b.mileage);
-  else if (sortBy === 'year-desc') filtered.sort((a, b) => b.year - a.year);
-  else if (sortBy === 'featured') filtered.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
+  if (sortBy === 'latest') {
+    filtered.sort((a, b) => {
+      const ta = Date.parse(a.createdAt || '') || 0;
+      const tb = Date.parse(b.createdAt || '') || 0;
+      if (tb !== ta) return tb - ta;
+      return (b.year || 0) - (a.year || 0);
+    });
+  } else if (sortBy === 'price-asc') {
+    filtered.sort((a, b) => (a.price || 0) - (b.price || 0));
+  } else if (sortBy === 'price-desc') {
+    filtered.sort((a, b) => (b.price || 0) - (a.price || 0));
+  } else if (sortBy === 'mileage-asc') {
+    filtered.sort((a, b) => ((a.kilometers ?? a.mileage) || 0) - ((b.kilometers ?? b.mileage) || 0));
+  } else if (sortBy === 'year-desc') {
+    filtered.sort((a, b) => (b.year || 0) - (a.year || 0));
+  } else if (sortBy === 'featured') {
+    filtered.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
+  }
+
+  renderActiveFilterChips({
+    keyword, make, model: modelQuery, location: locationQuery,
+    vehicleType, yearMin, yearMax, rawMinPrice, rawMaxPrice,
+    minMileage, maxMileage, bodyType, engineCap,
+    fuelTypes: fuelCheckboxes, transmission: transRadio, conditions: conditionCheckboxes
+  });
 
   renderCarsGrid(filtered);
   updateMarketStatusBar();
 }
 
 function renderMarketplace() {
+  populateAdvancedSearchOptions();
+  updateSegmentedPills();
   filterCars();
 }
 

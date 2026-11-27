@@ -368,70 +368,89 @@
             </div>
           </div>
 
-          <!-- Quick Search Bar Card -->
-          <div class="max-w-5xl mx-auto glass-panel rounded-2xl p-4 sm:p-5 shadow-2xl border border-slate-700/60">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <!-- Quick & Advanced Search Bar Card -->
+          <div id="hero-search-card" class="max-w-6xl mx-auto glass-panel rounded-2xl p-4 sm:p-5 shadow-2xl border border-white/10">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
               
               <!-- Quick Make -->
               <div>
-                <label class="block text-xs font-medium text-slate-400 mb-1">Make / Brand</label>
+                <label class="block text-[11px] mono-hud uppercase tracking-wider text-slate-400 mb-1">Make</label>
                 <div class="relative">
-                  <select id="quick-make" class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 appearance-none">
+                  <select id="quick-make" onchange="syncQuickToSidebar('make')" class="w-full bg-slate-950/90 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-red-500 appearance-none">
                     <option value="">All Makes</option>
-                    <option value="Porsche">Porsche</option>
-                    <option value="Mercedes-Benz">Mercedes-Benz</option>
-                    <option value="BMW">BMW</option>
-                    <option value="Tesla">Tesla</option>
-                    <option value="Audi">Audi</option>
-                    <option value="Toyota">Toyota</option>
-                    <option value="Ford">Ford</option>
-                    <option value="Chevrolet">Chevrolet</option>
                   </select>
-                  <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 absolute right-3 top-3 pointer-events-none"></i>
+                  <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 absolute right-2.5 top-3 pointer-events-none"></i>
                 </div>
               </div>
 
-              <!-- Quick Body Style -->
+              <!-- Quick Model -->
               <div>
-                <label class="block text-xs font-medium text-slate-400 mb-1">Body Style</label>
+                <label class="block text-[11px] mono-hud uppercase tracking-wider text-slate-400 mb-1">Model</label>
+                <input type="text" id="quick-model" list="car-models-datalist" oninput="syncQuickToSidebar('model')" placeholder="e.g. Civic, G 63, 911" class="w-full bg-slate-950/90 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-red-500">
+              </div>
+
+              <!-- Quick City / Location -->
+              <div>
+                <label class="block text-[11px] mono-hud uppercase tracking-wider text-slate-400 mb-1">City / Location</label>
+                <input type="text" id="quick-location" list="car-locations-datalist" oninput="syncQuickToSidebar('location')" placeholder="e.g. Lahore, Dubai..." class="w-full bg-slate-950/90 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-red-500">
+              </div>
+
+              <!-- Quick Body Type -->
+              <div>
+                <label class="block text-[11px] mono-hud uppercase tracking-wider text-slate-400 mb-1">Body Type</label>
                 <div class="relative">
-                  <select id="quick-body-style" class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 appearance-none">
-                    <option value="">All Body Styles</option>
-                    <option value="Coupe">Coupe</option>
-                    <option value="SUV">SUV</option>
+                  <select id="quick-body-style" onchange="syncQuickToSidebar('body')" class="w-full bg-slate-950/90 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-red-500 appearance-none">
+                    <option value="">All Body Types</option>
                     <option value="Sedan">Sedan</option>
+                    <option value="SUV">SUV</option>
+                    <option value="Coupe">Coupe</option>
+                    <option value="Hatchback">Hatchback</option>
                     <option value="Truck">Truck</option>
                     <option value="Wagon">Wagon</option>
+                    <option value="Convertible">Convertible</option>
                   </select>
-                  <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 absolute right-3 top-3 pointer-events-none"></i>
+                  <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 absolute right-2.5 top-3 pointer-events-none"></i>
                 </div>
               </div>
 
-              <!-- Quick Price Range -->
+              <!-- Quick New / Used Condition -->
               <div>
-                <label class="block text-xs font-medium text-slate-400 mb-1">Max Price</label>
+                <label class="block text-[11px] mono-hud uppercase tracking-wider text-slate-400 mb-1">New / Used</label>
                 <div class="relative">
-                  <select id="quick-max-price" class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 appearance-none">
-                    <option value="9999999">Any Price</option>
-                    <option value="50000">Up to $50,000</option>
-                    <option value="80000">Up to $80,000</option>
-                    <option value="120000">Up to $120,000</option>
-                    <option value="150000">Up to $150,000</option>
-                    <option value="200000">Up to $200,000</option>
+                  <select id="quick-condition" onchange="syncQuickToSidebar('vehicleType')" class="w-full bg-slate-950/90 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-red-500 appearance-none">
+                    <option value="all">All (New &amp; Used)</option>
+                    <option value="new">New Vehicles</option>
+                    <option value="used">Used Vehicles</option>
                   </select>
-                  <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 absolute right-3 top-3 pointer-events-none"></i>
+                  <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 absolute right-2.5 top-3 pointer-events-none"></i>
                 </div>
               </div>
 
-              <!-- Search Button -->
-              <div class="flex items-end">
-                <button onclick="applyQuickSearch()" class="w-full py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm flex items-center justify-center space-x-2 transition-colors btn-primary-glow">
+              <!-- Search CTA -->
+              <div class="flex items-end gap-2">
+                <button onclick="applyQuickSearch()" class="flex-1 py-2.5 px-4 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-sm flex items-center justify-center space-x-1.5 transition-colors shadow-lg shadow-red-600/25">
                   <i data-lucide="search" class="w-4 h-4"></i>
-                  <span>Find Vehicles</span>
+                  <span>Search</span>
+                </button>
+                <button onclick="document.getElementById('advanced-filters-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' })" title="Open All 10+ Advanced Filters" class="py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-white/15 text-slate-200 text-xs font-bold flex items-center justify-center shrink-0 transition-colors">
+                  <i data-lucide="sliders-horizontal" class="w-4 h-4 text-red-400"></i>
                 </button>
               </div>
 
             </div>
+
+            <!-- Dynamic shared datalists for Model, City/Location & Mileage -->
+            <datalist id="car-models-datalist"></datalist>
+            <datalist id="car-locations-datalist"></datalist>
+            <datalist id="mileage-presets-datalist">
+              <option value="500"></option>
+              <option value="1000"></option>
+              <option value="5000"></option>
+              <option value="10000"></option>
+              <option value="25000"></option>
+              <option value="50000"></option>
+              <option value="100000"></option>
+            </datalist>
           </div>
         </div>
       </section>
@@ -775,106 +794,198 @@
       <section id="inventory-showcase-section" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
           
-          <!-- Filters Sidebar -->
-          <div class="lg:col-span-1 space-y-6">
-            <div class="glass-panel p-5 rounded-2xl border border-slate-800">
-              <div class="flex items-center justify-between pb-4 border-b border-slate-800 mb-5">
+          <!-- Advanced Car Search Sidebar -->
+          <div id="advanced-filters-panel" class="lg:col-span-1 space-y-6">
+            <div class="glass-panel p-5 rounded-2xl border border-white/10 shadow-2xl">
+              <div class="flex items-center justify-between pb-3.5 border-b border-white/10 mb-4">
                 <div class="flex items-center space-x-2 text-white font-bold">
-                  <i data-lucide="sliders-horizontal" class="w-5 h-5 text-amber-500"></i>
-                  <span>Filter Vehicles</span>
+                  <i data-lucide="sliders-horizontal" class="w-5 h-5 text-red-500"></i>
+                  <span>Advanced Car Search</span>
                 </div>
-                <button onclick="resetFilters()" class="text-xs text-amber-400 hover:text-amber-300 font-medium">
+                <button onclick="resetFilters()" class="text-xs text-red-400 hover:text-red-300 font-semibold transition-colors">
                   Reset All
                 </button>
               </div>
 
-              <!-- Keyword Search -->
-              <div class="mb-5">
-                <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Search</label>
+              <!-- 1. Keyword Search -->
+              <div class="mb-4">
+                <label class="block text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Keyword / Feature</label>
                 <div class="relative">
-                  <input type="text" id="filter-keyword" oninput="debounceFilter()" placeholder="Model, trim, or feature..." class="w-full bg-slate-900 border border-slate-700 rounded-xl pl-9 pr-3.5 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500">
-                  <i data-lucide="search" class="w-4 h-4 text-slate-500 absolute left-3 top-2.5"></i>
+                  <input type="text" id="filter-keyword" oninput="debounceFilter()" placeholder="Trim, sunroof, turbo, VIN..." class="w-full bg-slate-950/90 border border-slate-700 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-red-500">
+                  <i data-lucide="search" class="w-3.5 h-3.5 text-slate-500 absolute left-3 top-2.5"></i>
                 </div>
               </div>
 
-              <!-- Price Range Slider -->
-              <div class="mb-5">
-                <div class="flex justify-between items-center mb-2">
-                  <label class="text-xs font-semibold text-slate-300 uppercase tracking-wider">Max Price</label>
-                  <span id="price-slider-display" class="text-xs font-bold text-amber-400">$200,000+</span>
+              <!-- 2. Car Make & Model -->
+              <div class="mb-4 grid grid-cols-1 gap-2.5">
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Car Make</label>
+                  <select id="filter-make" onchange="onFilterMakeChange()" class="w-full bg-slate-950/90 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-red-500">
+                    <option value="">All Makes</option>
+                  </select>
                 </div>
-                <input type="range" id="filter-price-range" min="30000" max="220000" step="5000" value="220000" oninput="updatePriceSlider(this.value)" class="w-full h-1.5 bg-slate-800 rounded-lg cursor-pointer">
-                <div class="flex justify-between text-[11px] text-slate-500 mt-1">
-                  <span>$30k</span>
-                  <span>$120k</span>
-                  <span>$220k+</span>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Car Model</label>
+                  <input type="text" id="filter-model" list="car-models-datalist" oninput="onFilterModelInput()" placeholder="Any model (e.g. Corolla, M4)" class="w-full bg-slate-950/90 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-red-500">
                 </div>
               </div>
 
-              <!-- Fuel Type -->
-              <div class="mb-5">
-                <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Powertrain</label>
-                <div class="grid grid-cols-2 gap-2 text-xs">
-                  <label class="flex items-center space-x-2 p-2 rounded-lg bg-slate-900/60 border border-slate-800 cursor-pointer hover:border-slate-700">
-                    <input type="checkbox" name="fuel" value="Gasoline" onchange="filterCars()" class="rounded border-slate-700 text-amber-500 focus:ring-amber-500">
-                    <span class="text-slate-300">Gasoline</span>
+              <!-- 3. City & Location -->
+              <div class="mb-4">
+                <label class="block text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1.5">City &amp; Location</label>
+                <div class="relative">
+                  <input type="text" id="filter-location" list="car-locations-datalist" oninput="onFilterLocationInput()" placeholder="Lahore, Karachi, Dubai, USA..." class="w-full bg-slate-950/90 border border-slate-700 rounded-xl pl-8 pr-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-red-500">
+                  <i data-lucide="map-pin" class="w-3.5 h-3.5 text-red-400 absolute left-2.5 top-2.5"></i>
+                </div>
+              </div>
+
+              <!-- 4. New & Used Vehicles -->
+              <div class="mb-4">
+                <label class="block text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1.5">New &amp; Used Vehicles</label>
+                <div class="grid grid-cols-3 gap-1.5 text-xs">
+                  <label class="flex items-center justify-center p-2 rounded-lg bg-slate-950 border border-slate-700 cursor-pointer hover:border-red-500/50 transition-colors">
+                    <input type="radio" name="vehicleType" value="all" checked onchange="onVehicleTypeChange(this.value)" class="sr-only">
+                    <span data-vt-pill="all" class="font-bold text-red-400">All</span>
                   </label>
-                  <label class="flex items-center space-x-2 p-2 rounded-lg bg-slate-900/60 border border-slate-800 cursor-pointer hover:border-slate-700">
-                    <input type="checkbox" name="fuel" value="Electric" onchange="filterCars()" class="rounded border-slate-700 text-amber-500 focus:ring-amber-500">
-                    <span class="text-slate-300">Electric (EV)</span>
+                  <label class="flex items-center justify-center p-2 rounded-lg bg-slate-950 border border-slate-700 cursor-pointer hover:border-red-500/50 transition-colors">
+                    <input type="radio" name="vehicleType" value="new" onchange="onVehicleTypeChange(this.value)" class="sr-only">
+                    <span data-vt-pill="new" class="font-medium text-slate-300">New</span>
                   </label>
-                  <label class="flex items-center space-x-2 p-2 rounded-lg bg-slate-900/60 border border-slate-800 cursor-pointer hover:border-slate-700">
-                    <input type="checkbox" name="fuel" value="Hybrid" onchange="filterCars()" class="rounded border-slate-700 text-amber-500 focus:ring-amber-500">
+                  <label class="flex items-center justify-center p-2 rounded-lg bg-slate-950 border border-slate-700 cursor-pointer hover:border-red-500/50 transition-colors">
+                    <input type="radio" name="vehicleType" value="used" onchange="onVehicleTypeChange(this.value)" class="sr-only">
+                    <span data-vt-pill="used" class="font-medium text-slate-300">Used</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- 5. Manufacturing Year (From / To) -->
+              <div class="mb-4">
+                <label class="block text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Manufacturing Year</label>
+                <div class="grid grid-cols-2 gap-2">
+                  <select id="filter-year-min" onchange="filterCars()" class="bg-slate-950/90 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-slate-200 focus:outline-none focus:border-red-500">
+                    <option value="">Year From</option>
+                  </select>
+                  <select id="filter-year-max" onchange="filterCars()" class="bg-slate-950/90 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-slate-200 focus:outline-none focus:border-red-500">
+                    <option value="">Year To</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- 6. Minimum & Maximum Price -->
+              <div class="mb-4">
+                <div class="flex justify-between items-center mb-1.5">
+                  <label class="text-[11px] font-semibold text-slate-300 uppercase tracking-wider">Price Range</label>
+                  <span id="adv-price-currency-label" class="text-[10px] font-bold text-red-400 mono-hud">USD ($)</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                  <input type="number" id="filter-min-price" min="0" step="1000" oninput="debounceFilter()" placeholder="Min Price" class="w-full bg-slate-950/90 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-red-500">
+                  <input type="number" id="filter-max-price" min="0" step="1000" oninput="debounceFilter()" placeholder="Max Price" class="w-full bg-slate-950/90 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-red-500">
+                </div>
+              </div>
+
+              <!-- 7. Mileage (Min / Max) -->
+              <div class="mb-4">
+                <label class="block text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Mileage (Min / Max)</label>
+                <div class="grid grid-cols-2 gap-2">
+                  <input type="number" id="filter-min-mileage" min="0" step="500" list="mileage-presets-datalist" oninput="debounceFilter()" placeholder="Min mi" class="w-full bg-slate-950/90 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-red-500">
+                  <input type="number" id="filter-max-mileage" min="0" step="500" list="mileage-presets-datalist" oninput="debounceFilter()" placeholder="Max mi" class="w-full bg-slate-950/90 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-red-500">
+                </div>
+              </div>
+
+              <!-- 8. Body Type -->
+              <div class="mb-4">
+                <label class="block text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Body Type</label>
+                <select id="filter-body-type" onchange="onFilterBodyChange()" class="w-full bg-slate-950/90 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-red-500">
+                  <option value="">All Body Types</option>
+                  <option value="Sedan">Sedan</option>
+                  <option value="SUV">SUV</option>
+                  <option value="Coupe">Coupe</option>
+                  <option value="Hatchback">Hatchback</option>
+                  <option value="Truck">Truck</option>
+                  <option value="Wagon">Wagon</option>
+                  <option value="Convertible">Convertible</option>
+                </select>
+              </div>
+
+              <!-- 9. Engine Capacity -->
+              <div class="mb-4">
+                <label class="block text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Engine Capacity</label>
+                <select id="filter-engine-capacity" onchange="filterCars()" class="w-full bg-slate-950/90 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-red-500">
+                  <option value="all">All Engine Capacities</option>
+                  <option value="ev">Electric (EV Motors / 0 cc)</option>
+                  <option value="0-1000">Up to 1,000 cc (&le; 1.0L)</option>
+                  <option value="1001-1500">1,001 &ndash; 1,500 cc (1.1L &ndash; 1.5L)</option>
+                  <option value="1501-2000">1,501 &ndash; 2,000 cc (1.6L &ndash; 2.0L)</option>
+                  <option value="2001-3000">2,001 &ndash; 3,000 cc (2.1L &ndash; 3.0L)</option>
+                  <option value="3001-4500">3,001 &ndash; 4,500 cc (3.1L &ndash; 4.5L)</option>
+                  <option value="4501+">4,501 cc+ (V8 / V10 / V12 / V16)</option>
+                </select>
+              </div>
+
+              <!-- 10. Fuel Type -->
+              <div class="mb-4">
+                <label class="block text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Fuel Type</label>
+                <div class="grid grid-cols-2 gap-1.5 text-xs">
+                  <label class="flex items-center space-x-2 p-2 rounded-lg bg-slate-950/80 border border-slate-800 cursor-pointer hover:border-red-500/40">
+                    <input type="checkbox" name="fuel" value="Gasoline" onchange="filterCars()" class="rounded border-slate-700 text-red-500 focus:ring-red-500">
+                    <span class="text-slate-300">Petrol / Gas</span>
+                  </label>
+                  <label class="flex items-center space-x-2 p-2 rounded-lg bg-slate-950/80 border border-slate-800 cursor-pointer hover:border-red-500/40">
+                    <input type="checkbox" name="fuel" value="Hybrid" onchange="filterCars()" class="rounded border-slate-700 text-red-500 focus:ring-red-500">
                     <span class="text-slate-300">Hybrid</span>
                   </label>
-                  <label class="flex items-center space-x-2 p-2 rounded-lg bg-slate-900/60 border border-slate-800 cursor-pointer hover:border-slate-700">
-                    <input type="checkbox" name="fuel" value="Diesel" onchange="filterCars()" class="rounded border-slate-700 text-amber-500 focus:ring-amber-500">
+                  <label class="flex items-center space-x-2 p-2 rounded-lg bg-slate-950/80 border border-slate-800 cursor-pointer hover:border-red-500/40">
+                    <input type="checkbox" name="fuel" value="Electric" onchange="filterCars()" class="rounded border-slate-700 text-red-500 focus:ring-red-500">
+                    <span class="text-slate-300">Electric (EV)</span>
+                  </label>
+                  <label class="flex items-center space-x-2 p-2 rounded-lg bg-slate-950/80 border border-slate-800 cursor-pointer hover:border-red-500/40">
+                    <input type="checkbox" name="fuel" value="Diesel" onchange="filterCars()" class="rounded border-slate-700 text-red-500 focus:ring-red-500">
                     <span class="text-slate-300">Diesel</span>
                   </label>
                 </div>
               </div>
 
-              <!-- Transmission -->
-              <div class="mb-5">
-                <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Transmission</label>
-                <div class="flex space-x-2">
-                  <label class="flex-1 flex items-center justify-center p-2 rounded-lg bg-slate-900/60 border border-slate-800 text-xs text-slate-300 cursor-pointer hover:border-slate-700">
-                    <input type="radio" name="transmission" value="all" checked onchange="filterCars()" class="sr-only">
-                    <span class="font-semibold text-amber-400">All</span>
+              <!-- 11. Transmission -->
+              <div class="mb-4">
+                <label class="block text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Transmission</label>
+                <div class="grid grid-cols-3 gap-1.5 text-xs">
+                  <label class="flex items-center justify-center p-2 rounded-lg bg-slate-950 border border-slate-700 cursor-pointer hover:border-red-500/50 transition-colors">
+                    <input type="radio" name="transmission" value="all" checked onchange="onTransmissionChange(this.value)" class="sr-only">
+                    <span data-tr-pill="all" class="font-bold text-red-400">All</span>
                   </label>
-                  <label class="flex-1 flex items-center justify-center p-2 rounded-lg bg-slate-900/60 border border-slate-800 text-xs text-slate-300 cursor-pointer hover:border-slate-700">
-                    <input type="radio" name="transmission" value="Automatic" onchange="filterCars()" class="sr-only">
-                    <span>Auto</span>
+                  <label class="flex items-center justify-center p-2 rounded-lg bg-slate-950 border border-slate-700 cursor-pointer hover:border-red-500/50 transition-colors">
+                    <input type="radio" name="transmission" value="Automatic" onchange="onTransmissionChange(this.value)" class="sr-only">
+                    <span data-tr-pill="Automatic" class="font-medium text-slate-300">Automatic</span>
                   </label>
-                  <label class="flex-1 flex items-center justify-center p-2 rounded-lg bg-slate-900/60 border border-slate-800 text-xs text-slate-300 cursor-pointer hover:border-slate-700">
-                    <input type="radio" name="transmission" value="Manual" onchange="filterCars()" class="sr-only">
-                    <span>Manual</span>
+                  <label class="flex items-center justify-center p-2 rounded-lg bg-slate-950 border border-slate-700 cursor-pointer hover:border-red-500/50 transition-colors">
+                    <input type="radio" name="transmission" value="Manual" onchange="onTransmissionChange(this.value)" class="sr-only">
+                    <span data-tr-pill="Manual" class="font-medium text-slate-300">Manual</span>
                   </label>
                 </div>
               </div>
 
-              <!-- Condition -->
-              <div>
-                <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Vehicle Condition</label>
+              <!-- Sub-Condition Tags -->
+              <div class="mb-4 pt-3 border-t border-white/10">
+                <label class="block text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Condition Grade</label>
                 <div class="space-y-1.5 text-xs text-slate-300">
                   <label class="flex items-center space-x-2 cursor-pointer">
-                    <input type="checkbox" name="condition" value="Certified Pre-Owned" onchange="filterCars()" class="rounded border-slate-700 text-amber-500">
+                    <input type="checkbox" name="condition" value="Certified Pre-Owned" onchange="filterCars()" class="rounded border-slate-700 text-red-500">
                     <span>Certified Pre-Owned</span>
                   </label>
                   <label class="flex items-center space-x-2 cursor-pointer">
-                    <input type="checkbox" name="condition" value="Like New" onchange="filterCars()" class="rounded border-slate-700 text-amber-500">
+                    <input type="checkbox" name="condition" value="Like New" onchange="filterCars()" class="rounded border-slate-700 text-red-500">
                     <span>Like New</span>
                   </label>
                   <label class="flex items-center space-x-2 cursor-pointer">
-                    <input type="checkbox" name="condition" value="Used" onchange="filterCars()" class="rounded border-slate-700 text-amber-500">
-                    <span>Pre-Owned / Used</span>
+                    <input type="checkbox" name="condition" value="Used" onchange="filterCars()" class="rounded border-slate-700 text-red-500">
+                    <span>Used</span>
                   </label>
                 </div>
               </div>
 
               <!-- Availability Status (Sold Out toggle) -->
-              <div class="pt-4 border-t border-slate-800">
-                <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Availability Status</label>
+              <div class="pt-3 border-t border-white/10">
+                <label class="block text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Availability Status</label>
                 <div class="space-y-2 text-xs text-slate-300">
                   <label class="flex items-center space-x-2 cursor-pointer">
                     <input type="checkbox" id="filter-show-active" checked onchange="filterCars()" class="rounded border-slate-700 text-emerald-500">
@@ -893,9 +1004,9 @@
             </div>
 
             <!-- Dealer Sell Banner -->
-            <div class="rounded-2xl p-5 bg-gradient-to-br from-amber-500/10 via-amber-600/15 to-slate-900 border border-amber-500/20">
+            <div class="rounded-2xl p-5 bg-gradient-to-br from-red-500/10 via-amber-600/10 to-slate-900 border border-red-500/20">
               <div class="flex items-center space-x-3 mb-3">
-                <div class="p-2 bg-amber-500/20 text-amber-400 rounded-lg">
+                <div class="p-2 bg-red-500/20 text-red-400 rounded-lg">
                   <i data-lucide="store" class="w-5 h-5"></i>
                 </div>
                 <h4 class="font-bold text-white text-sm">Are you a Car Dealer?</h4>
@@ -903,7 +1014,7 @@
               <p class="text-xs text-slate-300 leading-relaxed mb-4">
                 List your inventory on Desi Hood Cars and connect with thousands of active buyers with zero listing fees.
               </p>
-              <button onclick="switchView('become-dealer')" class="w-full py-2 px-3 text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl transition-colors">
+              <button onclick="switchView('become-dealer')" class="w-full py-2 px-3 text-xs font-bold bg-red-600 hover:bg-red-500 text-white rounded-xl transition-colors">
                 Apply as a Dealer
               </button>
             </div>
@@ -911,27 +1022,31 @@
           </div>
 
           <!-- Inventory Grid Area -->
-          <div class="lg:col-span-3 space-y-6">
+          <div class="lg:col-span-3 space-y-5">
             
             <!-- Controls Bar: Count & Sorting -->
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-800 gap-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-white/10 gap-4">
               <div>
-                <h2 class="text-xl font-bold text-white heading-font">Available Inventory & Past Sales</h2>
+                <h2 class="text-xl font-bold text-white heading-font">Available Inventory &amp; Past Sales</h2>
                 <p class="text-xs text-slate-400 mt-0.5" id="inventory-count-label">Showing vehicles</p>
               </div>
 
-              <!-- Sort Dropdown -->
+              <!-- Sort Dropdown (Latest, Lowest Price, Highest Price, Mileage) -->
               <div class="flex items-center space-x-3">
                 <span class="text-xs text-slate-400 whitespace-nowrap">Sort by:</span>
-                <select id="sort-by" onchange="filterCars()" class="bg-slate-900 border border-slate-700 text-xs rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-amber-500">
-                  <option value="featured">Featured First</option>
-                  <option value="price-asc">Price: Low to High</option>
-                  <option value="price-desc">Price: High to Low</option>
+                <select id="sort-by" onchange="filterCars()" class="bg-slate-950 border border-slate-700 text-xs rounded-xl px-3.5 py-2 text-slate-200 focus:outline-none focus:border-red-500">
+                  <option value="latest">Latest Listed</option>
+                  <option value="price-asc">Lowest Price</option>
+                  <option value="price-desc">Highest Price</option>
                   <option value="mileage-asc">Lowest Mileage</option>
                   <option value="year-desc">Newest Year</option>
+                  <option value="featured">Featured First</option>
                 </select>
               </div>
             </div>
+
+            <!-- Active Filter Chips Strip -->
+            <div id="active-filter-chips" class="hidden flex flex-wrap items-center gap-2"></div>
 
             <!-- Cars Grid -->
             <div id="cars-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
