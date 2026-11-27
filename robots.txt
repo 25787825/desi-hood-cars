@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /#owner
+Disallow: /#admin
+
+Sitemap: https://desi-hood-cars.vercel.app/sitemap.xml

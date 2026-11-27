@@ -10,11 +10,34 @@
   <meta name="google-site-verification" content="YK0T08naDCDbnMihyGPexXOhQVeHjdSeykyp94sa9Cc" />
   <title>Desi Hood Cars by Ahmad Raza | Buy • Sell • Drive Better</title>
   <meta name="description" content="Desi Hood Cars by Ahmad Raza — Buy, Sell & Drive Better. Certified Car & Bike Dealership Network Marketplace.">
+  <meta name="keywords" content="Desi Hood Cars, Ahmad Raza, Buy Cars Pakistan, Used Cars, New Cars 2026, Certified Car Dealers, Car Financing Calculator, Showroom Owners Pakistan">
+  <meta name="robots" id="meta-robots" content="index, follow">
+  <link rel="canonical" id="canonical-link" href="https://desi-hood-cars.vercel.app/">
   <link rel="icon" type="image/jpeg" href="gallery/desi-hood-cars-brand.jpg">
   <link rel="apple-touch-icon" href="gallery/desi-hood-cars-brand.jpg">
-  <meta property="og:title" content="Desi Hood Cars by Ahmad Raza">
-  <meta property="og:description" content="Buy • Sell • Drive Better — Premium Automotive Marketplace">
-  <meta property="og:image" content="gallery/desi-hood-cars-brand.jpg">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Desi Hood Cars">
+  <meta property="og:url" id="og-url" content="https://desi-hood-cars.vercel.app/">
+  <meta property="og:title" id="og-title" content="Desi Hood Cars by Ahmad Raza | Buy • Sell • Drive Better">
+  <meta property="og:description" id="og-description" content="Buy • Sell • Drive Better — Interactive 3D Automotive Marketplace & Verified Dealership Network.">
+  <meta property="og:image" content="https://desi-hood-cars.vercel.app/gallery/desi-hood-cars-brand.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" id="twitter-title" content="Desi Hood Cars by Ahmad Raza">
+  <meta name="twitter:description" id="twitter-description" content="Buy • Sell • Drive Better — Certified Vehicle Marketplace & Car Financing.">
+  <meta name="twitter:image" content="https://desi-hood-cars.vercel.app/gallery/desi-hood-cars-brand.jpg">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "AutoDealer",
+    "name": "Desi Hood Cars by Ahmad Raza",
+    "url": "https://desi-hood-cars.vercel.app/",
+    "logo": "https://desi-hood-cars.vercel.app/gallery/desi-hood-cars-brand.jpg",
+    "telephone": "+923435972004",
+    "email": "desihoodcars@gmail.com",
+    "sameAs": ["https://www.youtube.com/@DesiBoysCars"],
+    "description": "Certified automotive marketplace for buying and selling new and used vehicles with instant bank financing."
+  }
+  </script>
   
   <!-- Local Tailwind CSS (Works across Chrome, Edge, Firefox, Safari even offline) -->
   <script src="vendor/tailwindcss.js"></script>
@@ -1072,6 +1095,30 @@
         </div>
       </section>
 
+      <!-- Recently Viewed Vehicles Section (Public + Buyer Watchlist) -->
+      <section id="marketplace-recently-viewed-section" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-10">
+        <div class="glass-panel rounded-3xl p-5 sm:p-6 border border-white/10">
+          <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <div class="flex items-center space-x-2.5">
+              <i data-lucide="clock" class="w-5 h-5 text-red-400"></i>
+              <div>
+                <h3 class="text-base sm:text-lg font-extrabold text-white heading-font">Recently Viewed Vehicles</h3>
+                <p class="text-[11px] text-slate-400">Pick up where you left off or message dealers directly on WhatsApp.</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="openFavoritesModal()" class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-bold text-amber-400">
+                View Saved &amp; History
+              </button>
+              <button onclick="clearRecentlyViewedCars()" class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-rose-600/20 border border-slate-700 text-xs font-semibold text-slate-300 hover:text-rose-300">
+                Clear History
+              </button>
+            </div>
+          </div>
+          <div id="marketplace-recently-viewed-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"></div>
+        </div>
+      </section>
+
     </div>
 
     <!-- ============================================== -->
@@ -1256,6 +1303,7 @@
                 <i data-lucide="check-circle" class="w-4 h-4"></i>
                 <span>Lock In My Certified Cash Offer</span>
               </button>
+              <div id="valuation-confirmation-banner" class="hidden p-4 rounded-2xl bg-emerald-950/60 border border-emerald-500/40 text-xs text-emerald-200 space-y-2"></div>
             </form>
           </div>
 
@@ -1405,6 +1453,7 @@
                   <i data-lucide="shield-check" class="w-4 h-4"></i>
                   <span>Submit Soft Credit Check</span>
                 </button>
+                <div id="loan-confirmation-banner" class="hidden p-4 rounded-2xl bg-emerald-950/60 border border-emerald-500/40 text-xs text-emerald-200 space-y-2"></div>
               </form>
             </div>
           </div>
@@ -1620,6 +1669,7 @@
                 <i data-lucide="send" class="w-4 h-4"></i>
                 <span>Submit Message</span>
               </button>
+              <div id="contact-confirmation-banner" class="hidden p-4 rounded-2xl bg-emerald-950/60 border border-emerald-500/40 text-xs text-emerald-200 space-y-2"></div>
             </form>
           </div>
         </div>
@@ -3398,6 +3448,27 @@
           </button>
         </div>
       </form>
+
+      <!-- Clear Inquiry Success Screen (Shown after submitting inquiry) -->
+      <div id="inquiry-confirmation-box" class="hidden space-y-4 text-center py-2">
+        <div class="w-14 h-14 mx-auto rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
+          <i data-lucide="check-circle-2" class="w-8 h-8"></i>
+        </div>
+        <div>
+          <span class="px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[10px] font-extrabold uppercase tracking-widest">Inquiry Confirmed</span>
+          <h4 class="text-lg font-extrabold text-white heading-font mt-2">Your Inquiry Was Sent Successfully!</h4>
+          <p id="inquiry-confirm-details" class="text-xs text-slate-300 mt-1 leading-relaxed"></p>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-2.5 pt-2">
+          <a id="inquiry-confirm-wa-link" href="https://wa.me/923435972004" target="_blank" rel="noopener noreferrer" class="flex-1 py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center space-x-1.5 transition-colors">
+            <i data-lucide="message-circle" class="w-4 h-4"></i>
+            <span>Chat on WhatsApp Now</span>
+          </a>
+          <button type="button" onclick="closeModal('modal-contact-dealer'); switchView('buyer-account')" class="flex-1 py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold text-xs border border-slate-700 transition-colors">
+            View Inquiry History
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 

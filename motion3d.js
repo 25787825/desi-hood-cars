@@ -152,11 +152,6 @@
 
       const hudStageNum = document.getElementById('dh-hud-stage-num');
       if (hudStageNum) hudStageNum.textContent = stage.id;
-
-      const scrollHint = document.getElementById('dh-scroll-hint');
-      if (scrollHint) {
-        scrollHint.style.opacity = window.scrollY > 110 ? '0' : '0.85';
-      }
     }
 
     window.addEventListener('resize', resize, { passive: true });

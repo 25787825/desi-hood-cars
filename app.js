@@ -35,8 +35,10 @@ let appState = {
   inquiries: [],
   partOrders: [],
   favorites: [],
+  recentlyViewed: [],
   buyers: [],
   currentBuyerId: null,
+  buyerRegistrationNotice: null,
   dealerRequests: [],
   isOwnerAuthenticated: false,
   activeOwnerTab: 'requests',
@@ -107,10 +109,22 @@ document.addEventListener("DOMContentLoaded", () => {
   initBankFinancingRates();
   calculateFinancing();
   updateLiveEstimate();
+  renderMarketplaceRecentlyViewed();
+  const initialRoute = resolveInitialViewFromUrl();
+  if (initialRoute && initialRoute !== 'marketplace') {
+    switchView(initialRoute, { skipHistory: true });
+  } else {
+    updateSeoMetadata('marketplace');
+  }
   checkPrivateOwnerRoute();
   if (typeof syncFromSupabase === "function") {
     syncFromSupabase();
   }
+});
+
+window.addEventListener("popstate", (e) => {
+  const targetView = e.state?.view || resolveInitialViewFromUrl() || 'marketplace';
+  switchView(targetView, { skipHistory: true });
 });
 
 window.addEventListener("hashchange", checkPrivateOwnerRoute);
@@ -310,6 +324,8 @@ function initStorage() {
     }
     appState.inquiries = storedInquiries ? JSON.parse(storedInquiries) : [...INITIAL_INQUIRIES];
     appState.favorites = storedFavorites ? JSON.parse(storedFavorites) : [];
+    const storedRecent = localStorage.getItem('desihood_recently_viewed');
+    appState.recentlyViewed = storedRecent ? JSON.parse(storedRecent) : [];
     appState.partOrders = storedPartOrders ? JSON.parse(storedPartOrders) : [];
     appState.buyers = storedBuyers ? JSON.parse(storedBuyers) : [];
     appState.currentBuyerId = storedCurrentBuyer || null;
@@ -326,6 +342,7 @@ function initStorage() {
     appState.blogs = [...(typeof INITIAL_BLOGS !== 'undefined' ? INITIAL_BLOGS : [])];
     appState.inquiries = [...INITIAL_INQUIRIES];
     appState.favorites = [];
+    appState.recentlyViewed = [];
     appState.partOrders = [];
     appState.buyers = [];
     appState.currentBuyerId = null;
@@ -341,6 +358,7 @@ function saveAllState() {
   localStorage.setItem('desihood_blogs', JSON.stringify(appState.blogs));
   localStorage.setItem('desihood_inquiries', JSON.stringify(appState.inquiries));
   localStorage.setItem('desihood_favorites', JSON.stringify(appState.favorites));
+  localStorage.setItem('desihood_recently_viewed', JSON.stringify(appState.recentlyViewed || []));
   localStorage.setItem('desihood_part_orders', JSON.stringify(appState.partOrders));
   localStorage.setItem('desihood_buyers', JSON.stringify(appState.buyers));
   if (appState.currentBuyerId) {
@@ -352,9 +370,139 @@ function saveAllState() {
 }
 
 // ==========================================
+// SEO-FRIENDLY URLS, CANONICALS & DYNAMIC METADATA
+// ==========================================
+const SITE_ORIGIN = 'https://desi-hood-cars.vercel.app';
+const SEO_ROUTES = {
+  'marketplace': {
+    path: '/',
+    title: 'Desi Hood Cars by Ahmad Raza | Buy • Sell • Drive Better',
+    description: 'Browse verified luxury, sport, electric, and daily driver cars. Direct dealer connections with zero markup across Pakistan & global markets.'
+  },
+  'new-cars': {
+    path: '/new-cars',
+    title: '2026 New Cars & Global Releases | Desi Hood Cars',
+    description: 'Explore brand-new 2026 car launches, pricing, and certified dealership availability worldwide.'
+  },
+  'old-cars': {
+    path: '/used-cars',
+    title: 'Verified Used & Pre-Owned Cars | Desi Hood Cars',
+    description: 'Inspect used & pre-owned vehicles with verified mileage (KM/mi), engine condition, and direct dealer WhatsApp contact.'
+  },
+  'browse-more': {
+    path: '/bikes-and-ev',
+    title: 'Bikes, EVs, Car Reviews & Showrooms Hub | Desi Hood Cars',
+    description: 'Compare cars side-by-side, calculate on-road pricing, browse used bikes, and explore electric vehicles.'
+  },
+  'gallery': {
+    path: '/showroom-gallery',
+    title: 'Exclusive Showroom Photo Gallery | Desi Hood Cars',
+    description: 'High-resolution automotive gallery showcasing hypercars, EV concepts, and bespoke supercars.'
+  },
+  'blogs': {
+    path: '/auto-news-blogs',
+    title: 'Car Blogs & Automotive Industry News | Desi Hood Cars',
+    description: 'Live Google Auto News headlines, car reviews, EV tech updates, and buying guides.'
+  },
+  'youtube': {
+    path: '/videos',
+    title: '@DesiBoysCars Official YouTube Videos | Desi Hood Cars',
+    description: 'Watch car walkarounds, reviews, and automotive content from the official @DesiBoysCars channel.'
+  },
+  'spare-parts': {
+    path: '/spare-parts',
+    title: 'Genuine OEM & Performance Spare Parts | Desi Hood Cars',
+    description: 'Shop certified spare parts, brakes, forged wheels, and tuning upgrades with fast shipping.'
+  },
+  'dealers-directory': {
+    path: '/verified-dealers',
+    title: 'Certified Car Dealerships & Showrooms | Desi Hood Cars',
+    description: 'Connect directly with verified car dealerships across Pakistan, UAE, UK, USA, and globally.'
+  },
+  'sell-car': {
+    path: '/sell-your-car',
+    title: 'Sell Your Car Fast & Instant Valuation | Desi Hood Cars',
+    description: 'Get an instant certified cash offer for your vehicle with same-day payment and doorstep pickup.'
+  },
+  'financing': {
+    path: '/car-financing',
+    title: 'Car Loan & Bank Financing Calculator (0 to 50M) | Desi Hood Cars',
+    description: 'Calculate monthly auto installments across HBL, Meezan, Alfalah, MCB, UBL, and global financing plans.'
+  },
+  'become-dealer': {
+    path: '/become-a-dealer',
+    title: 'Apply as an Authorized Dealer | Desi Hood Cars',
+    description: 'Join the Desi Hood Cars dealer network to list inventory with zero middleman fees.'
+  },
+  'buyer-account': {
+    path: '/buyer-account',
+    title: 'Buyer Account, Saved Vehicles & Inquiry History | Desi Hood Cars',
+    description: 'Manage your saved favorite vehicles, recently viewed cars, buyer inquiry history, and dealer WhatsApp chats.'
+  },
+  'dealer-portal': {
+    path: '/dealer-portal',
+    title: 'Dealer Inventory & Leads Management Portal | Desi Hood Cars',
+    description: 'Manage showroom vehicle listings, mark sold inventory, and respond to customer inquiries.'
+  },
+  'about': {
+    path: '/about-us',
+    title: 'About Desi Hood Cars by Ahmad Raza',
+    description: 'Learn how Desi Hood Cars connects car buyers directly with certified showrooms without middleman markups.'
+  },
+  'contact': {
+    path: '/contact-us',
+    title: 'Contact Desi Hood Cars Support & WhatsApp Desk',
+    description: 'Reach Ahmad Raza & Desi Hood Cars support via WhatsApp, email, or direct message.'
+  },
+  'owner-console': {
+    path: '/#owner',
+    noindex: true,
+    title: 'Owner Admin Panel | Desi Hood Cars',
+    description: 'Private owner moderation & dealer request administration console.'
+  },
+  'showroom-owners-pk': {
+    path: '/#showroom-owners-pk',
+    noindex: true,
+    title: 'Showroom Owners Pakistan | Desi Hood Cars Admin',
+    description: 'Private admin directory of Showroom Owners Pakistan.'
+  }
+};
+
+function resolveInitialViewFromUrl() {
+  const path = (window.location.pathname || '/').replace(/\/+$/, '') || '/';
+  const params = new URLSearchParams(window.location.search || '');
+  const paramView = params.get('view');
+  if (paramView && SEO_ROUTES[paramView]) return paramView;
+  for (const [viewKey, cfg] of Object.entries(SEO_ROUTES)) {
+    if (!cfg.noindex && cfg.path === path) return viewKey;
+  }
+  return 'marketplace';
+}
+
+function updateSeoMetadata(viewName, customMeta = null) {
+  const meta = Object.assign({}, SEO_ROUTES[viewName] || SEO_ROUTES.marketplace, customMeta || {});
+  document.title = meta.title;
+
+  const setMeta = (selector, attr, val) => {
+    const el = document.querySelector(selector);
+    if (el && val) el.setAttribute(attr, val);
+  };
+
+  const canonicalUrl = meta.noindex ? `${SITE_ORIGIN}/` : `${SITE_ORIGIN}${meta.path === '/' ? '/' : meta.path}`;
+  setMeta('meta[name="description"]', 'content', meta.description);
+  setMeta('#canonical-link', 'href', canonicalUrl);
+  setMeta('#og-url', 'content', canonicalUrl);
+  setMeta('#og-title', 'content', meta.title);
+  setMeta('#og-description', 'content', meta.description);
+  setMeta('#twitter-title', 'content', meta.title);
+  setMeta('#twitter-description', 'content', meta.description);
+  setMeta('#meta-robots', 'content', meta.noindex ? 'noindex, nofollow' : 'index, follow');
+}
+
+// ==========================================
 // NAVIGATION & VIEW SWITCHER
 // ==========================================
-function switchView(viewName) {
+function switchView(viewName, options = {}) {
   appState.currentView = viewName;
 
   const views = [
@@ -422,6 +570,17 @@ function switchView(viewName) {
   else if (viewName === 'dealer-portal') renderDealerPortal();
   else if (viewName === 'owner-console') renderOwnerConsole();
   else if (viewName === 'showroom-owners-pk') renderShowroomOwnersPK();
+
+  updateSeoMetadata(viewName);
+  if (!options.skipHistory && typeof window.history?.pushState === 'function' && /^https?:$/i.test(window.location.protocol)) {
+    const seoRoute = SEO_ROUTES[viewName];
+    if (seoRoute && !seoRoute.noindex) {
+      const targetUrl = seoRoute.path + (window.location.search || '');
+      if (window.location.pathname !== seoRoute.path) {
+        window.history.pushState({ view: viewName }, seoRoute.title, targetUrl);
+      }
+    }
+  }
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
   lucide.createIcons();
@@ -1008,26 +1167,53 @@ function resetFilters() {
   showToast("Filters Reset", "Showing all vehicles", "info");
 }
 
+function clearFilterChip(key) {
+  const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+  if (key === 'keyword') { setVal('filter-keyword', ''); }
+  else if (key === 'make') { setVal('filter-make', ''); setVal('quick-make', ''); populateAdvancedSearchOptions(); }
+  else if (key === 'model') { setVal('filter-model', ''); setVal('quick-model', ''); }
+  else if (key === 'location') { setVal('filter-location', ''); setVal('quick-location', ''); }
+  else if (key === 'vehicleType') {
+    setVal('quick-condition', 'all');
+    const r = document.querySelector('input[name="vehicleType"][value="all"]');
+    if (r) r.checked = true;
+    updateSegmentedPills();
+  }
+  else if (key === 'year') { setVal('filter-year-min', ''); setVal('filter-year-max', ''); }
+  else if (key === 'price') { setVal('filter-min-price', ''); setVal('filter-max-price', ''); }
+  else if (key === 'mileage') { setVal('filter-min-mileage', ''); setVal('filter-max-mileage', ''); }
+  else if (key === 'body') { setVal('filter-body-type', ''); setVal('quick-body-style', ''); }
+  else if (key === 'engine') { setVal('filter-engine-capacity', 'all'); }
+  else if (key === 'fuel') { document.querySelectorAll('input[name="fuel"]').forEach(e => { e.checked = false; }); }
+  else if (key === 'transmission') {
+    const r = document.querySelector('input[name="transmission"][value="all"]');
+    if (r) r.checked = true;
+    updateSegmentedPills();
+  }
+  else if (key === 'condition') { document.querySelectorAll('input[name="condition"]').forEach(e => { e.checked = false; }); }
+  filterCars();
+}
+
 function renderActiveFilterChips(filters) {
   const container = document.getElementById("active-filter-chips");
   if (!container) return;
 
   const chips = [];
-  const addChip = (label, clearFn) => chips.push({ label, clearFn });
+  const addChip = (label, key) => chips.push({ label, key });
 
-  if (filters.keyword) addChip(`Keyword: "${filters.keyword}"`, `document.getElementById('filter-keyword').value=''; filterCars();`);
-  if (filters.make) addChip(`Make: ${filters.make}`, `document.getElementById('filter-make').value=''; onFilterMakeChange();`);
-  if (filters.model) addChip(`Model: "${filters.model}"`, `document.getElementById('filter-model').value=''; document.getElementById('quick-model').value=''; filterCars();`);
-  if (filters.location) addChip(`Location: "${filters.location}"`, `document.getElementById('filter-location').value=''; document.getElementById('quick-location').value=''; filterCars();`);
-  if (filters.vehicleType !== 'all') addChip(`Type: ${filters.vehicleType === 'new' ? 'New' : 'Used'}`, `onVehicleTypeChange('all'); document.querySelector('input[name="vehicleType"][value="all"]').checked=true; updateSegmentedPills();`);
-  if (filters.yearMin || filters.yearMax) addChip(`Year: ${filters.yearMin || 'Any'} – ${filters.yearMax || 'Any'}`, `document.getElementById('filter-year-min').value=''; document.getElementById('filter-year-max').value=''; filterCars();`);
-  if (filters.rawMinPrice || filters.rawMaxPrice) addChip(`Price: ${filters.rawMinPrice || '0'} – ${filters.rawMaxPrice || 'Any'}`, `document.getElementById('filter-min-price').value=''; document.getElementById('filter-max-price').value=''; filterCars();`);
-  if (filters.minMileage !== null || filters.maxMileage !== null) addChip(`Mileage: ${filters.minMileage ?? 0} – ${filters.maxMileage ?? 'Any'}`, `document.getElementById('filter-min-mileage').value=''; document.getElementById('filter-max-mileage').value=''; filterCars();`);
-  if (filters.bodyType) addChip(`Body: ${filters.bodyType}`, `document.getElementById('filter-body-type').value=''; onFilterBodyChange();`);
-  if (filters.engineCap !== 'all') addChip(`Engine: ${filters.engineCap}`, `document.getElementById('filter-engine-capacity').value='all'; filterCars();`);
-  if (filters.fuelTypes.length) addChip(`Fuel: ${filters.fuelTypes.join(', ')}`, `document.querySelectorAll('input[name="fuel"]').forEach(e=>e.checked=false); filterCars();`);
-  if (filters.transmission !== 'all') addChip(`Trans: ${filters.transmission}`, `document.querySelector('input[name="transmission"][value="all"]').checked=true; onTransmissionChange('all');`);
-  if (filters.conditions.length) addChip(`Grade: ${filters.conditions.join(', ')}`, `document.querySelectorAll('input[name="condition"]').forEach(e=>e.checked=false); filterCars();`);
+  if (filters.keyword) addChip(`Keyword: "${filters.keyword}"`, 'keyword');
+  if (filters.make) addChip(`Make: ${filters.make}`, 'make');
+  if (filters.model) addChip(`Model: "${filters.model}"`, 'model');
+  if (filters.location) addChip(`Location: "${filters.location}"`, 'location');
+  if (filters.vehicleType !== 'all') addChip(`Type: ${filters.vehicleType === 'new' ? 'New' : 'Used'}`, 'vehicleType');
+  if (filters.yearMin || filters.yearMax) addChip(`Year: ${filters.yearMin || 'Any'} – ${filters.yearMax || 'Any'}`, 'year');
+  if (filters.rawMinPrice || filters.rawMaxPrice) addChip(`Price: ${filters.rawMinPrice || '0'} – ${filters.rawMaxPrice || 'Any'}`, 'price');
+  if (filters.minMileage !== null || filters.maxMileage !== null) addChip(`Mileage: ${filters.minMileage ?? 0} – ${filters.maxMileage ?? 'Any'}`, 'mileage');
+  if (filters.bodyType) addChip(`Body: ${filters.bodyType}`, 'body');
+  if (filters.engineCap !== 'all') addChip(`Engine: ${filters.engineCap}`, 'engine');
+  if (filters.fuelTypes.length) addChip(`Fuel: ${filters.fuelTypes.join(', ')}`, 'fuel');
+  if (filters.transmission !== 'all') addChip(`Trans: ${filters.transmission}`, 'transmission');
+  if (filters.conditions.length) addChip(`Grade: ${filters.conditions.join(', ')}`, 'condition');
 
   if (chips.length === 0) {
     container.innerHTML = "";
@@ -1037,7 +1223,7 @@ function renderActiveFilterChips(filters) {
 
   container.classList.remove("hidden");
   container.innerHTML = chips.map(ch => `
-    <button type="button" onclick="${ch.clearFn}" class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-red-500/15 border border-red-500/35 text-red-300 hover:bg-red-500/25 text-[11px] font-semibold transition-colors">
+    <button type="button" onclick="clearFilterChip('${ch.key}')" class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-red-500/15 border border-red-500/35 text-red-300 hover:bg-red-500/25 text-[11px] font-semibold transition-colors">
       <span>${escapeHtml(ch.label)}</span>
       <span class="text-red-400 font-bold">&times;</span>
     </button>
@@ -1194,7 +1380,7 @@ function renderCarsGrid(carsList) {
   if (countLabel) {
     const soldCount = carsList.filter(c => c.status === 'sold').length;
     const activeCount = carsList.length - soldCount;
-    countLabel.textContent = `Showing ${activeCount} active in stock &bull; ${soldCount} sold out`;
+    countLabel.textContent = `Showing ${activeCount} active in stock • ${soldCount} sold out`;
   }
 
   if (carsList.length === 0) {
@@ -1940,6 +2126,8 @@ function openCarDetailModal(carId) {
   const car = appState.cars.find(c => c.id === carId);
   if (!car) return;
 
+  recordRecentlyViewedCar(car.id);
+
   const dealer = getDealerById(car.dealerId);
   const isSold = car.status === 'sold';
   const container = document.getElementById("car-detail-content");
@@ -2102,11 +2290,51 @@ function updateLiveEstimate() {
 
 function handleCarValuationSubmit(e) {
   e.preventDefault();
-  const name = document.getElementById("seller-name").value;
-  const phone = document.getElementById("seller-phone").value;
-  const offer = document.getElementById("val-result-range").textContent;
+  const make = document.getElementById("seller-make")?.value.trim() || "Vehicle";
+  const model = document.getElementById("seller-model")?.value.trim() || "";
+  const year = document.getElementById("seller-year")?.value || "";
+  const mileage = document.getElementById("seller-mileage")?.value || "";
+  const condition = document.getElementById("seller-condition")?.value || "";
+  const name = document.getElementById("seller-name")?.value.trim() || "Seller";
+  const phone = document.getElementById("seller-phone")?.value.trim() || "";
+  const offer = document.getElementById("val-result-range")?.textContent || "";
 
-  showToast("Certified Offer Locked!", `Thank you ${name}. Our appraisal desk has received your submission (${offer}). We will contact ${phone} shortly.`, "success");
+  const newReq = {
+    id: "inq-" + Date.now(),
+    carId: "valuation-" + Date.now(),
+    dealerId: appState.activeDealerId || "dealer-pk-1",
+    carName: `${year} ${make} ${model}`.trim(),
+    customerName: name,
+    customerEmail: getCurrentBuyer()?.email || "",
+    customerPhone: phone,
+    type: "Sell / Valuation Offer",
+    message: `Appraisal Estimate: ${offer} • Condition: ${condition} • Mileage: ${mileage} mi`,
+    status: "New",
+    createdAt: new Date().toISOString()
+  };
+
+  appState.inquiries.unshift(newReq);
+  saveAllState();
+  if (typeof sbUpsertRecord === "function" && typeof mapInquiryToRow === "function") {
+    sbUpsertRecord("inquiries", mapInquiryToRow(newReq));
+  }
+  renderDealerPortal();
+  if (typeof renderOwnerContentModeration === "function") renderOwnerContentModeration();
+
+  const banner = document.getElementById("valuation-confirmation-banner");
+  if (banner) {
+    const waText = encodeURIComponent(`Assalam-o-Alaikum, I locked my cash valuation offer (${offer}) for my ${newReq.carName} (${newReq.id}) on Desi Hood Cars.`);
+    banner.innerHTML = `
+      <div class="font-extrabold text-emerald-300">Certified Offer Locked! Reference: ${escapeHtml(newReq.id)}</div>
+      <p>Thank you <strong>${escapeHtml(name)}</strong>. Your <strong>${escapeHtml(newReq.carName)}</strong> appraisal (${escapeHtml(offer)}) has been saved and routed to our buying desk.</p>
+      <a href="https://wa.me/923435972004?text=${waText}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold">
+        <span>Send Photos on WhatsApp &rarr;</span>
+      </a>
+    `;
+    banner.classList.remove("hidden");
+  }
+
+  showToast("Certified Offer Locked!", `Saved ${newReq.carName} appraisal (${offer}) and alerted our inspection desk.`, "success");
 }
 
 // ==========================================
@@ -2395,14 +2623,91 @@ function calculateFinancing() {
 
 function handlePreApprovalSubmit(e) {
   e.preventDefault();
-  const name = document.getElementById("loan-name").value;
-  showToast("Pre-Approval Submitted", `Thank you ${name}. Soft credit evaluation completed. Approved at competitive rates!`, "success");
+  const name = document.getElementById("loan-name").value.trim();
+  const email = document.getElementById("loan-email").value.trim();
+  const monthly = document.getElementById("calc-monthly-payment")?.textContent.trim() || "";
+  const bankName = document.getElementById("calc-summary-bank-name")?.textContent.trim() || "Desi Hood Finance";
+
+  const newPreApp = {
+    id: "inq-" + Date.now(),
+    carId: "financing-" + Date.now(),
+    dealerId: appState.activeDealerId || "dealer-pk-1",
+    carName: `Financing Pre-Approval (${bankName})`,
+    customerName: name,
+    customerEmail: email,
+    customerPhone: getCurrentBuyer()?.phone || "",
+    type: "Financing Pre-Approval",
+    message: `Pre-approval request via ${bankName} • Estimated Monthly: ${monthly}`,
+    status: "New",
+    createdAt: new Date().toISOString()
+  };
+
+  appState.inquiries.unshift(newPreApp);
+  saveAllState();
+  if (typeof sbUpsertRecord === "function" && typeof mapInquiryToRow === "function") {
+    sbUpsertRecord("inquiries", mapInquiryToRow(newPreApp));
+  }
+  renderDealerPortal();
+  if (typeof renderBuyerAccountView === "function") renderBuyerAccountView();
+
+  const banner = document.getElementById("loan-confirmation-banner");
+  if (banner) {
+    const waText = encodeURIComponent(`Assalam-o-Alaikum, I submitted my car financing pre-approval (${newPreApp.id}) with ${bankName} on Desi Hood Cars.`);
+    banner.innerHTML = `
+      <div class="font-extrabold text-emerald-300">Pre-Approval Application Recorded (${escapeHtml(newPreApp.id)})</div>
+      <p>Thank you <strong>${escapeHtml(name)}</strong>! Soft evaluation with <strong>${escapeHtml(bankName)}</strong> is logged under <strong>${escapeHtml(email)}</strong>.</p>
+      <a href="https://wa.me/923435972004?text=${waText}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold">
+        <span>Verify Documents on WhatsApp &rarr;</span>
+      </a>
+    `;
+    banner.classList.remove("hidden");
+  }
+
+  e.target.reset();
+  showToast("Pre-Approval Submitted", `Thank you ${name}. Your ${bankName} pre-approval is saved & sent to our finance team.`, "success");
 }
 
 function handleContactSupportSubmit(e) {
   e.preventDefault();
-  const name = document.getElementById("contact-name").value;
-  showToast("Message Sent", `Thank you ${name}. Desi Hood Cars team has received your message and will respond shortly.`, "success");
+  const name = document.getElementById("contact-name").value.trim();
+  const email = document.getElementById("contact-email").value.trim();
+  const msg = document.getElementById("contact-message").value.trim();
+
+  const supportTicket = {
+    id: "inq-" + Date.now(),
+    carId: "support",
+    dealerId: "owner-desk",
+    carName: "Customer Support Ticket",
+    customerName: name,
+    customerEmail: email,
+    customerPhone: getCurrentBuyer()?.phone || "",
+    type: "Contact Support",
+    message: msg,
+    status: "New",
+    createdAt: new Date().toISOString()
+  };
+
+  appState.inquiries.unshift(supportTicket);
+  saveAllState();
+  if (typeof sbUpsertRecord === "function" && typeof mapInquiryToRow === "function") {
+    sbUpsertRecord("inquiries", mapInquiryToRow(supportTicket));
+  }
+  if (typeof renderOwnerContentModeration === "function") renderOwnerContentModeration();
+  if (typeof renderBuyerAccountView === "function") renderBuyerAccountView();
+
+  const banner = document.getElementById("contact-confirmation-banner");
+  if (banner) {
+    banner.innerHTML = `
+      <div class="font-extrabold text-emerald-300">Support Ticket Received (${escapeHtml(supportTicket.id)})</div>
+      <p>Thank you <strong>${escapeHtml(name)}</strong>. Our team will reply to <strong>${escapeHtml(email)}</strong> shortly.</p>
+      <a href="https://wa.me/923435972004?text=${encodeURIComponent('Hi Desi Hood Cars Support, following up on ticket ' + supportTicket.id)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold">
+        <span>Urgent? Chat on WhatsApp &rarr;</span>
+      </a>
+    `;
+    banner.classList.remove("hidden");
+  }
+
+  showToast("Message Sent", `Thank you ${name}. Saved ticket ${supportTicket.id} and notified Desi Hood Cars support.`, "success");
   e.target.reset();
 }
 
@@ -2596,9 +2901,14 @@ function openInquiryModal(carId, type = 'Check Availability') {
   if (!car) return;
   const dealer = getDealerById(car.dealerId);
 
+  const formEl = document.getElementById("inquiry-form");
+  const confirmEl = document.getElementById("inquiry-confirmation-box");
+  if (formEl) formEl.classList.remove("hidden");
+  if (confirmEl) confirmEl.classList.add("hidden");
+
   document.getElementById("inquiry-car-id").value = car.id;
   document.getElementById("inquiry-dealer-id").value = dealer.id;
-  document.getElementById("inquiry-vehicle-summary").textContent = `Re: ${car.year} ${car.make} ${car.model} (${formatCurrency(car.price)}) &bull; Dealer: ${dealer.name}`;
+  document.getElementById("inquiry-vehicle-summary").textContent = `Re: ${car.year} ${car.make} ${car.model} (${formatCurrency(car.price)}) • Dealer: ${dealer.name}`;
   document.getElementById("inquiry-type").value = type;
 
   const currentBuyer = getCurrentBuyer();
@@ -2619,9 +2929,12 @@ function handleInquirySubmit(e) {
   const carId = document.getElementById("inquiry-car-id").value;
   const dealerId = document.getElementById("inquiry-dealer-id").value;
   const car = appState.cars.find(c => c.id === carId);
+  const dealer = getDealerById(dealerId);
+  const currentBuyer = getCurrentBuyer();
 
   const newInq = {
     id: "inq-" + Date.now(),
+    buyerId: currentBuyer ? currentBuyer.id : null,
     carId: carId,
     dealerId: dealerId,
     carName: car ? `${car.year} ${car.make} ${car.model}` : "Vehicle",
@@ -2639,28 +2952,107 @@ function handleInquirySubmit(e) {
   if (typeof sbUpsertRecord === "function" && typeof mapInquiryToRow === "function") {
     sbUpsertRecord("inquiries", mapInquiryToRow(newInq));
   }
-  closeModal("modal-contact-dealer");
-  showToast("Inquiry Transmitted!", "The dealership has received your message and will contact you promptly.", "success");
+
+  const formEl = document.getElementById("inquiry-form");
+  const confirmEl = document.getElementById("inquiry-confirmation-box");
+  const detailsEl = document.getElementById("inquiry-confirm-details");
+  const waLinkEl = document.getElementById("inquiry-confirm-wa-link");
+  if (formEl) formEl.classList.add("hidden");
+  if (confirmEl) confirmEl.classList.remove("hidden");
+  if (detailsEl) {
+    detailsEl.innerHTML = `Confirmation <strong>${escapeHtml(newInq.id)}</strong> for <strong>${escapeHtml(newInq.carName)}</strong> was delivered to <strong>${escapeHtml(dealer?.name || 'Dealership')}</strong> and logged in your Buyer Inquiry History.`;
+  }
+  if (waLinkEl) {
+    waLinkEl.href = buildCarWhatsAppUrl(car, dealer);
+  }
+
+  if (formEl) formEl.reset();
+  showToast("Inquiry Sent Successfully!", `Reference ${newInq.id} sent to ${dealer?.name || 'dealer'} for ${newInq.carName}.`, "success");
   renderDealerPortal();
+  renderBuyerAccountView();
+  if (typeof renderOwnerContentModeration === "function") renderOwnerContentModeration();
+  lucide.createIcons();
 }
 
 // ==========================================
-// FAVORITES WATCHLIST
+// SAVED VEHICLES & RECENTLY VIEWED WATCHLIST
 // ==========================================
+function recordRecentlyViewedCar(carId) {
+  if (!carId) return;
+  if (!Array.isArray(appState.recentlyViewed)) appState.recentlyViewed = [];
+  appState.recentlyViewed = [carId, ...appState.recentlyViewed.filter(id => id !== carId)].slice(0, 12);
+  saveAllState();
+  renderMarketplaceRecentlyViewed();
+  if (appState.currentView === 'buyer-account') renderBuyerAccountView();
+}
+
+function clearRecentlyViewedCars() {
+  appState.recentlyViewed = [];
+  saveAllState();
+  renderMarketplaceRecentlyViewed();
+  if (appState.currentView === 'buyer-account') renderBuyerAccountView();
+  showToast("History Cleared", "Your recently viewed cars list has been cleared.", "info");
+}
+
+function renderMarketplaceRecentlyViewed() {
+  const section = document.getElementById("marketplace-recently-viewed-section");
+  const grid = document.getElementById("marketplace-recently-viewed-grid");
+  if (!section || !grid) return;
+
+  const recentCars = (appState.recentlyViewed || [])
+    .map(id => appState.cars.find(c => c.id === id))
+    .filter(Boolean)
+    .slice(0, 4);
+
+  if (recentCars.length === 0) {
+    section.classList.add("hidden");
+    grid.innerHTML = "";
+    return;
+  }
+
+  section.classList.remove("hidden");
+  grid.innerHTML = recentCars.map(car => {
+    const dealer = getDealerById(car.dealerId);
+    const isFav = appState.favorites.includes(car.id);
+    return `
+      <div class="glass-card rounded-2xl overflow-hidden border border-slate-800 flex flex-col justify-between p-3 space-y-2.5">
+        <div class="cursor-pointer" onclick="openCarDetailModal('${car.id}')">
+          <div class="relative h-32 rounded-xl overflow-hidden bg-slate-950 mb-2">
+            <img src="${car.image}" alt="${car.make} ${car.model}" class="w-full h-full object-cover">
+            <span class="absolute bottom-2 right-2 px-2 py-0.5 rounded bg-black/80 text-amber-400 text-xs font-extrabold">${formatCurrency(car.price)}</span>
+          </div>
+          <h4 class="text-xs font-bold text-white truncate">${car.year} ${car.make} ${car.model}</h4>
+          <p class="text-[11px] text-slate-400 truncate">${formatNumber(car.mileage)} mi • ${escapeHtml(dealer?.location || '')}</p>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <button onclick="openCarDetailModal('${car.id}')" class="flex-1 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-[11px] font-bold">Inspect</button>
+          <a href="${buildCarWhatsAppUrl(car, dealer)}" target="_blank" rel="noopener noreferrer" class="flex-1 py-1.5 rounded-lg bg-emerald-600/25 hover:bg-emerald-500 text-emerald-300 hover:text-slate-950 text-[11px] font-bold text-center border border-emerald-500/40">WhatsApp</a>
+          <button onclick="toggleFavorite('${car.id}', event)" title="Save Vehicle" class="p-1.5 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 hover:text-rose-400">
+            <i data-lucide="heart" class="w-3.5 h-3.5 ${isFav ? 'text-rose-500 fill-rose-500' : ''}"></i>
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+  lucide.createIcons();
+}
+
 function toggleFavorite(carId, event) {
   if (event) event.stopPropagation();
   const idx = appState.favorites.indexOf(carId);
   if (idx === -1) {
     appState.favorites.push(carId);
-    showToast("Saved to Favorites", "Added to your watchlist", "info");
+    showToast("Saved to Favorites", "Added to your Saved Vehicles watchlist.", "info");
   } else {
     appState.favorites.splice(idx, 1);
-    showToast("Removed from Favorites", "Removed from watchlist", "info");
+    showToast("Removed from Favorites", "Removed from your Saved Vehicles watchlist.", "info");
   }
 
   saveAllState();
   updateFavoritesCount();
   renderMarketplace();
+  renderMarketplaceRecentlyViewed();
+  if (appState.currentView === 'buyer-account') renderBuyerAccountView();
 }
 
 function updateFavoritesCount() {
@@ -2671,38 +3063,76 @@ function updateFavoritesCount() {
 function openFavoritesModal() {
   const container = document.getElementById("favorites-list");
   const favCars = appState.cars.filter(c => appState.favorites.includes(c.id));
+  const recentCars = (appState.recentlyViewed || [])
+    .map(id => appState.cars.find(c => c.id === id))
+    .filter(Boolean);
 
-  if (favCars.length === 0) {
-    container.innerHTML = `
-      <div class="text-center py-12 text-slate-400">
-        <i data-lucide="heart" class="w-10 h-10 mx-auto mb-2 text-slate-600"></i>
-        <p class="text-sm">You haven't saved any vehicles yet.</p>
-        <p class="text-xs text-slate-500 mt-1">Click the heart icon on any car card to save it for later.</p>
+  const favSection = favCars.length === 0
+    ? `
+      <div class="text-center py-8 text-slate-400 border border-slate-800 rounded-2xl bg-slate-950/60">
+        <i data-lucide="heart" class="w-8 h-8 mx-auto mb-2 text-slate-600"></i>
+        <p class="text-sm font-semibold text-white">No saved vehicles yet</p>
+        <p class="text-xs text-slate-500 mt-1">Click the heart icon on any vehicle card to bookmark it here.</p>
       </div>
-    `;
-  } else {
-    container.innerHTML = favCars.map(car => `
-      <div class="flex items-center justify-between p-3.5 bg-slate-950 rounded-2xl border border-slate-800">
-        <div class="flex items-center space-x-3.5 cursor-pointer" onclick="closeModal('modal-favorites'); openCarDetailModal('${car.id}')">
-          <img src="${car.image}" class="w-16 h-12 rounded-xl object-cover border border-slate-800">
-          <div>
-            <h4 class="text-sm font-bold text-white hover:text-amber-400 transition-colors">${car.year} ${car.make} ${car.model}</h4>
-            <span class="text-xs font-bold text-amber-400">${formatCurrency(car.price)}</span>
-            <span class="text-[11px] text-slate-500 ml-2">${formatNumber(car.mileage)} mi</span>
+    `
+    : favCars.map(car => {
+        const dealer = getDealerById(car.dealerId);
+        return `
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-slate-950 rounded-2xl border border-slate-800">
+            <div class="flex items-center space-x-3.5 cursor-pointer" onclick="closeModal('modal-favorites'); openCarDetailModal('${car.id}')">
+              <img src="${car.image}" class="w-16 h-12 rounded-xl object-cover border border-slate-800">
+              <div>
+                <h4 class="text-sm font-bold text-white hover:text-amber-400 transition-colors">${car.year} ${car.make} ${car.model}</h4>
+                <span class="text-xs font-bold text-amber-400">${formatCurrency(car.price)}</span>
+                <span class="text-[11px] text-slate-500 ml-2">${formatNumber(car.mileage)} mi</span>
+              </div>
+            </div>
+            <div class="flex items-center space-x-2">
+              <a href="${buildCarWhatsAppUrl(car, dealer)}" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 bg-emerald-600/25 hover:bg-emerald-500 text-emerald-300 hover:text-slate-950 font-bold rounded-lg text-xs border border-emerald-500/40">
+                WhatsApp
+              </a>
+              <button onclick="closeModal('modal-favorites'); openInquiryModal('${car.id}')" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-xs">
+                Inquire
+              </button>
+              <button onclick="toggleFavorite('${car.id}'); openFavoritesModal();" title="Remove" class="p-1.5 text-slate-400 hover:text-rose-500 transition-colors">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            </div>
           </div>
-        </div>
-        <div class="flex items-center space-x-2">
-          <button onclick="closeModal('modal-favorites'); openInquiryModal('${car.id}')" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-xs">
-            Contact
-          </button>
-          <button onclick="toggleFavorite('${car.id}')" class="p-1.5 text-slate-400 hover:text-rose-500 transition-colors">
-            <i data-lucide="trash-2" class="w-4 h-4"></i>
-          </button>
-        </div>
-      </div>
-    `).join("");
-  }
+        `;
+      }).join("");
 
+  const recentSection = `
+    <div class="pt-4 border-t border-slate-800 space-y-2.5">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-extrabold uppercase tracking-wider text-slate-300">Recently Viewed (${recentCars.length})</span>
+        ${recentCars.length ? `<button onclick="clearRecentlyViewedCars(); openFavoritesModal();" class="text-[11px] text-rose-400 hover:underline font-semibold">Clear History</button>` : ''}
+      </div>
+      ${recentCars.length === 0
+        ? `<p class="text-xs text-slate-500">Click "Details" on any car to build your recently viewed history.</p>`
+        : recentCars.slice(0, 6).map(car => {
+            const dealer = getDealerById(car.dealerId);
+            return `
+              <div class="flex items-center justify-between p-2.5 bg-slate-950/70 rounded-xl border border-slate-800/80">
+                <div class="flex items-center space-x-3 cursor-pointer" onclick="closeModal('modal-favorites'); openCarDetailModal('${car.id}')">
+                  <img src="${car.image}" class="w-12 h-9 rounded-lg object-cover border border-slate-800">
+                  <div>
+                    <h5 class="text-xs font-bold text-white">${car.year} ${car.make} ${car.model}</h5>
+                    <span class="text-[11px] text-amber-400 font-bold">${formatCurrency(car.price)}</span>
+                  </div>
+                </div>
+                <div class="flex items-center space-x-1.5">
+                  <a href="${buildCarWhatsAppUrl(car, dealer)}" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 bg-emerald-600/20 text-emerald-300 border border-emerald-500/30 rounded-lg text-[11px] font-bold">WhatsApp</a>
+                  <button onclick="closeModal('modal-favorites'); openCarDetailModal('${car.id}')" class="px-2.5 py-1 bg-slate-800 text-white rounded-lg text-[11px] font-semibold">View</button>
+                </div>
+              </div>
+            `;
+          }).join("")
+      }
+    </div>
+  `;
+
+  container.innerHTML = `<div class="space-y-3">${favSection}</div>${recentSection}`;
   openModal("modal-favorites");
   lucide.createIcons();
 }
@@ -3639,13 +4069,22 @@ function handleBuyerRegistration(e) {
   const regForm = document.getElementById("buyer-registration-form");
   if (regForm) regForm.reset();
 
-  if (CURRENCIES[preferredCurrency] && typeof changeGlobalCurrency === 'function') {
-    changeGlobalCurrency(preferredCurrency);
+  if (CURRENCIES[preferredCurrency]) {
+    appState.currentCurrency = preferredCurrency;
+    localStorage.setItem('desihood_currency', preferredCurrency);
+    updateMarketStatusBar();
   }
+
+  appState.buyerRegistrationNotice = {
+    fullName,
+    username,
+    email,
+    createdAt: new Date().toLocaleTimeString()
+  };
 
   updateBuyerNavLabel();
   renderBuyerAccountView();
-  showToast("Buyer Account Created!", `Welcome, ${fullName}! Your verified buyer profile is now active.`, "success");
+  showToast("Buyer Account Created Successfully!", `Welcome ${fullName}! Your verified buyer profile (@${username}) is active.`, "success");
 }
 
 function handleBuyerLogin(e) {
@@ -3723,14 +4162,36 @@ function renderBuyerAccountView() {
   authContainer.classList.add("hidden");
   dashContainer.classList.remove("hidden");
 
-  const myInquiries = (appState.inquiries || []).filter(
-    inq => (inq.customerEmail || '').toLowerCase() === buyer.email.toLowerCase()
+  const myInquiries = (appState.inquiries || []).filter(inq =>
+    inq.buyerId === buyer.id ||
+    (inq.customerEmail && buyer.email && inq.customerEmail.toLowerCase() === buyer.email.toLowerCase()) ||
+    (inq.customerPhone && buyer.phone && inq.customerPhone.replace(/\D/g, '') === buyer.phone.replace(/\D/g, ''))
   );
+  const savedCars = (appState.cars || []).filter(c => (appState.favorites || []).includes(c.id));
+  const recentCars = (appState.recentlyViewed || []).map(id => (appState.cars || []).find(c => c.id === id)).filter(Boolean);
   const memberDate = new Date(buyer.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   const waDigits = (buyer.whatsapp || buyer.phone || '').replace(/[^0-9]/g, '');
+  const regNotice = appState.buyerRegistrationNotice;
 
   dashContainer.innerHTML = `
-    <div class="glass-panel p-6 sm:p-8 rounded-3xl border border-emerald-500/40 shadow-2xl">
+    <div class="space-y-6">
+      ${regNotice ? `
+        <div class="p-5 rounded-3xl bg-emerald-950/60 border border-emerald-500/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
+          <div class="flex items-start space-x-3.5">
+            <div class="w-11 h-11 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center shrink-0 text-emerald-400">
+              <i data-lucide="check-circle-2" class="w-6 h-6"></i>
+            </div>
+            <div>
+              <span class="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-extrabold uppercase tracking-wider">Registration Successful</span>
+              <h4 class="text-base font-extrabold text-white mt-1">Welcome to Desi Hood Cars, ${escapeHtml(regNotice.fullName)}!</h4>
+              <p class="text-xs text-emerald-200/90 mt-0.5">Your buyer account (@${escapeHtml(regNotice.username)} &bull; ${escapeHtml(regNotice.email)}) is verified. Inquiries auto-fill your details and save here.</p>
+            </div>
+          </div>
+          <button onclick="appState.buyerRegistrationNotice=null; renderBuyerAccountView();" class="px-3 py-1.5 rounded-xl bg-slate-900/80 border border-slate-700 text-xs text-slate-300 hover:text-white shrink-0">Dismiss</button>
+        </div>
+      ` : ''}
+
+      <div class="glass-panel p-6 sm:p-8 rounded-3xl border border-emerald-500/40 shadow-2xl">
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div class="flex items-center space-x-5">
           <img src="${escapeHtml(buyer.avatar)}" alt="${escapeHtml(buyer.fullName)}" class="w-20 h-20 rounded-2xl object-cover border-2 border-emerald-500/50 shadow-xl">
@@ -3858,6 +4319,137 @@ function renderBuyerAccountView() {
           </div>
         </form>
       </div>
+    </div>
+
+      <!-- BUYER SECTION 1: SAVED VEHICLES -->
+      <div class="glass-panel p-6 sm:p-7 rounded-3xl border border-slate-800 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h4 class="text-base font-extrabold text-white heading-font flex items-center space-x-2">
+              <i data-lucide="heart" class="w-4 h-4 text-rose-500"></i>
+              <span>Saved Vehicles (${savedCars.length})</span>
+            </h4>
+            <p class="text-xs text-slate-400">Your bookmarked vehicles ready to inspect, inquire, or chat on WhatsApp.</p>
+          </div>
+          <button onclick="switchView('marketplace')" class="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-xs font-bold text-amber-400 hover:border-amber-500/50">Browse More Cars &rarr;</button>
+        </div>
+        <div id="buyer-saved-vehicles-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          ${savedCars.length === 0 ? `
+            <div class="md:col-span-2 p-6 rounded-2xl bg-slate-950/70 border border-slate-800 text-center text-xs text-slate-400">
+              You haven't saved any vehicles yet. Click the heart icon on any car listing to save it here.
+            </div>
+          ` : savedCars.map(car => {
+            const dealer = getDealerById(car.dealerId);
+            return `
+              <div class="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 flex flex-col justify-between gap-3">
+                <div class="flex items-center space-x-3.5 cursor-pointer" onclick="openCarDetailModal('${car.id}')">
+                  <img src="${car.image}" alt="${car.make} ${car.model}" class="w-20 h-14 rounded-xl object-cover border border-slate-800 shrink-0">
+                  <div class="min-w-0">
+                    <h5 class="text-sm font-bold text-white truncate">${car.year} ${car.make} ${car.model}</h5>
+                    <span class="text-xs font-extrabold text-amber-400">${formatCurrency(car.price)}</span>
+                    <p class="text-[11px] text-slate-400 truncate">${formatNumber(car.mileage)} mi &bull; ${escapeHtml(dealer?.name || '')}</p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button onclick="openCarDetailModal('${car.id}')" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold">Details</button>
+                  <button onclick="openInquiryModal('${car.id}')" class="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold">Inquire</button>
+                  <a href="${buildCarWhatsAppUrl(car, dealer)}" target="_blank" rel="noopener noreferrer" class="flex-1 py-1.5 px-3 rounded-lg bg-emerald-600/25 hover:bg-emerald-500 text-emerald-300 hover:text-slate-950 border border-emerald-500/40 text-xs font-bold text-center">WhatsApp Dealer</a>
+                  <button onclick="toggleFavorite('${car.id}', event)" title="Remove Saved Car" class="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-rose-400">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                  </button>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+
+      <!-- BUYER SECTION 2: RECENTLY VIEWED CARS -->
+      <div class="glass-panel p-6 sm:p-7 rounded-3xl border border-slate-800 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h4 class="text-base font-extrabold text-white heading-font flex items-center space-x-2">
+              <i data-lucide="clock" class="w-4 h-4 text-sky-400"></i>
+              <span>Recently Viewed Cars (${recentCars.length})</span>
+            </h4>
+            <p class="text-xs text-slate-400">Cars you inspected recently on Desi Hood Cars.</p>
+          </div>
+          ${recentCars.length ? `<button onclick="clearRecentlyViewedCars()" class="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-xs font-semibold text-rose-400 hover:bg-rose-500/10">Clear History</button>` : ''}
+        </div>
+        <div id="buyer-recently-viewed-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          ${recentCars.length === 0 ? `
+            <div class="sm:col-span-2 lg:col-span-3 p-6 rounded-2xl bg-slate-950/70 border border-slate-800 text-center text-xs text-slate-400">
+              No recently viewed cars yet. Open any vehicle's Details modal to keep a quick history here.
+            </div>
+          ` : recentCars.map(car => {
+            const dealer = getDealerById(car.dealerId);
+            const isFav = (appState.favorites || []).includes(car.id);
+            return `
+              <div class="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 flex flex-col justify-between gap-2.5">
+                <div class="cursor-pointer" onclick="openCarDetailModal('${car.id}')">
+                  <img src="${car.image}" alt="${car.make} ${car.model}" class="w-full h-28 rounded-xl object-cover border border-slate-800 mb-2">
+                  <h5 class="text-xs font-bold text-white truncate">${car.year} ${car.make} ${car.model}</h5>
+                  <p class="text-xs font-extrabold text-amber-400">${formatCurrency(car.price)}</p>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <button onclick="openInquiryModal('${car.id}')" class="flex-1 py-1.5 rounded-lg bg-amber-500 text-slate-950 text-[11px] font-bold">Inquire</button>
+                  <a href="${buildCarWhatsAppUrl(car, dealer)}" target="_blank" rel="noopener noreferrer" class="flex-1 py-1.5 rounded-lg bg-emerald-600/25 text-emerald-300 border border-emerald-500/40 text-[11px] font-bold text-center">WhatsApp</a>
+                  <button onclick="toggleFavorite('${car.id}', event)" class="p-1.5 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 hover:text-rose-400">
+                    <i data-lucide="heart" class="w-3.5 h-3.5 ${isFav ? 'text-rose-500 fill-rose-500' : ''}"></i>
+                  </button>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+
+      <!-- BUYER SECTION 3: INQUIRY HISTORY -->
+      <div class="glass-panel p-6 sm:p-7 rounded-3xl border border-slate-800 space-y-4">
+        <div>
+          <h4 class="text-base font-extrabold text-white heading-font flex items-center space-x-2">
+            <i data-lucide="message-square" class="w-4 h-4 text-emerald-400"></i>
+            <span>My Inquiry History (${myInquiries.length})</span>
+          </h4>
+          <p class="text-xs text-slate-400">Track your sent test drive requests, price inquiries, and chat directly with the assigned dealer on WhatsApp.</p>
+        </div>
+        <div id="buyer-inquiry-history-list" class="space-y-3">
+          ${myInquiries.length === 0 ? `
+            <div class="p-6 rounded-2xl bg-slate-950/70 border border-slate-800 text-center text-xs text-slate-400">
+              No inquiries submitted under your account yet. Click "Inquire" on any vehicle to message a showroom!
+            </div>
+          ` : myInquiries.map(inq => {
+            const car = (appState.cars || []).find(c => c.id === inq.carId);
+            const dealer = getDealerById(inq.dealerId);
+            const statusClass = inq.status === 'Closed'
+              ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+              : inq.status === 'Contacted'
+              ? 'bg-sky-500/20 text-sky-300 border-sky-500/30'
+              : 'bg-amber-500/20 text-amber-300 border-amber-500/30';
+            return `
+              <div class="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="space-y-1">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold border ${statusClass}">${escapeHtml(inq.status || 'New')}</span>
+                    <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 text-[10px] font-semibold">${escapeHtml(inq.type)}</span>
+                    <h5 class="text-xs font-extrabold text-white">${escapeHtml(inq.carName)}</h5>
+                  </div>
+                  <p class="text-xs text-slate-300">${escapeHtml(inq.message)}</p>
+                  <p class="text-[11px] text-slate-500">Sent ${new Date(inq.createdAt).toLocaleString()} &bull; Ref: ${escapeHtml(inq.id)}</p>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                  ${car ? `<button onclick="openCarDetailModal('${car.id}')" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold">View Car</button>` : ''}
+                  <a href="${buildCarWhatsAppUrl(car, dealer)}" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-lg bg-emerald-600/25 hover:bg-emerald-500 text-emerald-300 hover:text-slate-950 border border-emerald-500/40 text-xs font-bold flex items-center space-x-1">
+                    <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>
+                    <span>WhatsApp Follow-Up</span>
+                  </a>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+
     </div>
   `;
 

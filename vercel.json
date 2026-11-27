@@ -2,7 +2,22 @@
   "cleanUrls": true,
   "rewrites": [
     { "source": "/.netlify/functions/auto-news", "destination": "/api/auto-news" },
-    { "source": "/.netlify/functions/new-cars", "destination": "/api/new-cars" }
+    { "source": "/.netlify/functions/new-cars", "destination": "/api/new-cars" },
+    { "source": "/new-cars", "destination": "/index.html" },
+    { "source": "/used-cars", "destination": "/index.html" },
+    { "source": "/bikes-and-ev", "destination": "/index.html" },
+    { "source": "/showroom-gallery", "destination": "/index.html" },
+    { "source": "/auto-news-blogs", "destination": "/index.html" },
+    { "source": "/videos", "destination": "/index.html" },
+    { "source": "/spare-parts", "destination": "/index.html" },
+    { "source": "/verified-dealers", "destination": "/index.html" },
+    { "source": "/sell-your-car", "destination": "/index.html" },
+    { "source": "/car-financing", "destination": "/index.html" },
+    { "source": "/become-a-dealer", "destination": "/index.html" },
+    { "source": "/buyer-account", "destination": "/index.html" },
+    { "source": "/dealer-portal", "destination": "/index.html" },
+    { "source": "/about-us", "destination": "/index.html" },
+    { "source": "/contact-us", "destination": "/index.html" }
   ],
   "headers": [
     {
