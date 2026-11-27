@@ -2290,11 +2290,11 @@ function updateLiveEstimate() {
 
 function handleCarValuationSubmit(e) {
   e.preventDefault();
-  const make = document.getElementById("seller-make")?.value.trim() || "Vehicle";
-  const model = document.getElementById("seller-model")?.value.trim() || "";
-  const year = document.getElementById("seller-year")?.value || "";
-  const mileage = document.getElementById("seller-mileage")?.value || "";
-  const condition = document.getElementById("seller-condition")?.value || "";
+  const make = document.getElementById("val-make")?.value.trim() || "Vehicle";
+  const year = document.getElementById("val-year")?.value || "";
+  const mileage = document.getElementById("val-mileage")?.value || "";
+  const condEl = document.getElementById("val-condition");
+  const condition = condEl ? (condEl.options[condEl.selectedIndex]?.text || condEl.value) : "";
   const name = document.getElementById("seller-name")?.value.trim() || "Seller";
   const phone = document.getElementById("seller-phone")?.value.trim() || "";
   const offer = document.getElementById("val-result-range")?.textContent || "";
@@ -2303,7 +2303,7 @@ function handleCarValuationSubmit(e) {
     id: "inq-" + Date.now(),
     carId: "valuation-" + Date.now(),
     dealerId: appState.activeDealerId || "dealer-pk-1",
-    carName: `${year} ${make} ${model}`.trim(),
+    carName: `${year} ${make}`.trim(),
     customerName: name,
     customerEmail: getCurrentBuyer()?.email || "",
     customerPhone: phone,
