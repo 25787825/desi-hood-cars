@@ -312,6 +312,10 @@
           <i data-lucide="building-2" class="w-3.5 h-3.5 text-amber-400"></i>
           <span>Showroom Owners Pakistan</span>
         </button>
+        <button id="nav-btn-owner-logout" onclick="logoutAdminConsole()" class="hidden shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold text-red-400 hover:text-white hover:bg-red-600 transition-colors border border-red-500/40 items-center space-x-1.5">
+          <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+          <span>Logout Admin</span>
+        </button>
         <button id="nav-btn-about" onclick="switchView('about')" class="shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/50 transition-colors flex items-center space-x-1.5">
           <i data-lucide="info" class="w-3.5 h-3.5 text-blue-400"></i>
           <span>About Us</span>
@@ -1855,6 +1859,10 @@
               <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
               <span>Remove Permanently</span>
             </button>
+            <button onclick="logoutAdminConsole()" class="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-red-600 border border-red-500/40 text-red-300 hover:text-white text-xs font-bold flex items-center space-x-1.5 transition-colors">
+              <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+              <span>Logout Admin</span>
+            </button>
           </div>
         </div>
 
@@ -2414,20 +2422,78 @@
           Strictly private admin console for platform owner <strong class="text-amber-400">AHMAD RAZA</strong> to approve/reject dealers, ban fraudulent accounts, moderate vehicles, view buyers, and manage cloud sync.
         </p>
 
-        <form id="owner-auth-form" onsubmit="handleOwnerLogin(event)" class="mt-6 space-y-4 text-left">
+        <form id="owner-auth-form" onsubmit="handleOwnerLogin(event)" autocomplete="off" class="mt-6 space-y-4 text-left">
           <div>
             <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Admin / Owner Email *</label>
-            <input type="email" id="owner-auth-email" required placeholder="desihoodcars@gmail.com" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-rose-500">
+            <input type="email" id="owner-auth-email" required autocomplete="off" placeholder="desihoodcars@gmail.com" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-rose-500">
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Admin Security Passcode / PIN *</label>
-            <input type="password" id="owner-auth-pin" required placeholder="Enter Admin PIN" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-rose-500">
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-xs font-semibold text-slate-300 uppercase">Admin Password / Security PIN *</label>
+              <button type="button" onclick="toggleOwnerRecoveryPanel(true)" class="text-[11px] font-bold text-amber-400 hover:text-amber-300 hover:underline transition-colors">
+                Forgot Password?
+              </button>
+            </div>
+            <input type="password" id="owner-auth-pin" required autocomplete="new-password" placeholder="Enter Admin Password / PIN" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-rose-500">
           </div>
           <button type="submit" class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-extrabold text-xs uppercase tracking-wider shadow-xl shadow-rose-500/20 flex items-center justify-center space-x-2">
             <i data-lucide="unlock" class="w-4 h-4"></i>
             <span>Unlock Hidden Admin Panel</span>
           </button>
         </form>
+
+        <!-- Forgot Password & 6-Digit Email Recovery Panel -->
+        <div id="owner-recovery-panel" class="hidden mt-6 space-y-4 text-left border-t border-slate-800 pt-5">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-extrabold uppercase tracking-wider text-amber-400 flex items-center space-x-1.5">
+              <i data-lucide="mail-check" class="w-4 h-4"></i>
+              <span>Recover Admin Password</span>
+            </span>
+            <button type="button" onclick="toggleOwnerRecoveryPanel(false)" class="text-[11px] font-semibold text-slate-400 hover:text-white">
+              &larr; Back to Login
+            </button>
+          </div>
+
+          <form id="owner-recovery-request-form" onsubmit="handleRequestAdminRecoveryCode(event)" class="space-y-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Registered Admin Email *</label>
+              <input type="email" id="owner-recovery-email" required placeholder="desihoodcars@gmail.com" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500">
+            </div>
+            <button type="submit" id="owner-recovery-send-btn" class="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs uppercase tracking-wider transition-colors flex items-center justify-center space-x-2">
+              <i data-lucide="send" class="w-3.5 h-3.5"></i>
+              <span>Send 6-Digit Recovery Code</span>
+            </button>
+          </form>
+
+          <div id="owner-recovery-step2" class="hidden space-y-3 pt-2">
+            <div id="owner-recovery-status-banner" class="p-3 rounded-xl border text-[11px] leading-relaxed"></div>
+
+            <form id="owner-recovery-verify-form" onsubmit="handleVerifyAdminRecoveryCode(event)" class="space-y-3">
+              <div>
+                <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">6-Digit Verification Code *</label>
+                <input type="text" id="owner-recovery-code" required maxlength="6" inputmode="numeric" pattern="\d{6}" placeholder="Enter 6-digit code" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-mono tracking-[0.4em] text-center text-white focus:outline-none focus:border-emerald-500">
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-300 uppercase mb-1">New Password / PIN *</label>
+                  <input type="password" id="owner-recovery-new-pin" required minlength="4" autocomplete="new-password" placeholder="Min 4 chars" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500">
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-300 uppercase mb-1">Confirm New Password *</label>
+                  <input type="password" id="owner-recovery-confirm-pin" required minlength="4" autocomplete="new-password" placeholder="Repeat password" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500">
+                </div>
+              </div>
+              <div class="flex gap-2">
+                <button type="submit" class="flex-1 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs uppercase tracking-wider transition-colors">
+                  Verify &amp; Reset Password
+                </button>
+                <button type="button" onclick="resendAdminRecoveryCode()" class="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700">
+                  Resend
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       </div>
 
       <!-- Unlocked Admin / Owner Dashboard (Visible ONLY when authenticated) -->
@@ -2451,9 +2517,9 @@
               <button onclick="openChangeOwnerPinModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 transition-colors">
                 Change Admin PIN
               </button>
-              <button onclick="lockOwnerConsole()" class="px-4 py-2 rounded-xl bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 text-xs font-bold border border-rose-500/40 flex items-center space-x-1.5 transition-colors">
-                <i data-lucide="lock" class="w-3.5 h-3.5"></i>
-                <span>Lock &amp; Hide Admin</span>
+              <button id="btn-admin-logout" onclick="logoutAdminConsole()" class="px-4 py-2 rounded-xl bg-red-600/20 hover:bg-red-600 text-red-300 hover:text-white text-xs font-extrabold border border-red-500/50 flex items-center space-x-1.5 transition-colors">
+                <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+                <span>Logout Admin</span>
               </button>
             </div>
           </div>
@@ -2628,9 +2694,9 @@
             <button onclick="openOwnerConsole()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 transition-colors">
               Admin Panel
             </button>
-            <button onclick="lockOwnerConsole()" class="px-4 py-2.5 rounded-xl bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 text-xs font-bold border border-rose-500/40 flex items-center space-x-1.5 transition-colors">
-              <i data-lucide="lock" class="w-3.5 h-3.5"></i>
-              <span>Lock Admin</span>
+            <button id="btn-pk-admin-logout" onclick="logoutAdminConsole()" class="px-4 py-2.5 rounded-xl bg-red-600/20 hover:bg-red-600 text-red-300 hover:text-white text-xs font-extrabold border border-red-500/50 flex items-center space-x-1.5 transition-colors">
+              <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+              <span>Logout Admin</span>
             </button>
           </div>
         </div>

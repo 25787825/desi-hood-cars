@@ -548,6 +548,8 @@ function switchView(viewName, options = {}) {
     return;
   }
 
+  updateOwnerNavVisibility();
+
   const active = views.find(v => v.id === viewName);
   if (active && active.el) {
     active.el.classList.remove('hidden');
@@ -4468,7 +4470,8 @@ function getOwnerPin() {
 function updateOwnerNavVisibility() {
   const navBtns = [
     document.getElementById("nav-btn-owner-desk"),
-    document.getElementById("nav-btn-showroom-owners-pk")
+    document.getElementById("nav-btn-showroom-owners-pk"),
+    document.getElementById("nav-btn-owner-logout")
   ].filter(Boolean);
 
   navBtns.forEach(navBtn => {
@@ -4503,22 +4506,25 @@ function updateOwnerPendingBadge() {
 
 function requireOwnerAccess() {
   if (appState.isOwnerAuthenticated === true) return true;
-  showToast("Owner Only Feature", "Restricted strictly to Owner AHMAD RAZA. Please unlock Owner Desk.", "error");
+  showToast("Owner Only Feature", "Restricted strictly to Owner AHMAD RAZA. Please sign in with Admin Email and Password.", "error");
   switchView('owner-console');
   return false;
 }
 
 function openOwnerConsole() {
+  toggleOwnerRecoveryPanel(false);
   switchView('owner-console');
 }
 
 function handleOwnerLogin(e) {
   e.preventDefault();
-  const email = document.getElementById("owner-auth-email").value.trim().toLowerCase();
-  const pin = document.getElementById("owner-auth-pin").value.trim();
+  const emailEl = document.getElementById("owner-auth-email");
+  const pinEl = document.getElementById("owner-auth-pin");
+  const email = (emailEl?.value || '').trim().toLowerCase();
+  const pin = (pinEl?.value || '').trim();
 
   if (email !== OWNER_EMAIL || pin !== getOwnerPin()) {
-    showToast("Access Denied", "Invalid Owner Email or Security PIN. Only Owner AHMAD RAZA can access this box.", "error");
+    showToast("Access Denied", "Invalid Admin Email or Password/PIN. Only Owner AHMAD RAZA can unlock the Admin Panel.", "error");
     return;
   }
 
@@ -4526,28 +4532,266 @@ function handleOwnerLogin(e) {
   sessionStorage.setItem('desihood_owner_auth', 'true');
   const form = document.getElementById("owner-auth-form");
   if (form) form.reset();
+  if (emailEl) emailEl.value = '';
+  if (pinEl) pinEl.value = '';
+  toggleOwnerRecoveryPanel(false);
 
   populateDealerDropdown();
   updateOwnerNavVisibility();
   renderOwnerConsole();
   if (appState.currentView === 'dealer-portal') renderDealerPortal();
-  showToast("Owner Mode Unlocked", "Welcome AHMAD RAZA! Dealer Request Box & Moderation controls are active.", "success");
+  showToast("Admin Logged In", "Welcome AHMAD RAZA! Admin Panel & Showroom Owners Pakistan unlocked.", "success");
 }
 
-function lockOwnerConsole() {
+function logoutAdminConsole() {
   appState.isOwnerAuthenticated = false;
   sessionStorage.removeItem('desihood_owner_auth');
-  const pkTbody = document.getElementById("pk-showroom-owners-tbody");
-  if (pkTbody) pkTbody.innerHTML = "";
+  localStorage.removeItem('desihood_owner_auth');
+
+  // Clear admin credential inputs so re-login strictly requires fresh email & password
+  const emailEl = document.getElementById("owner-auth-email");
+  const pinEl = document.getElementById("owner-auth-pin");
+  const form = document.getElementById("owner-auth-form");
+  if (form) form.reset();
+  if (emailEl) emailEl.value = '';
+  if (pinEl) pinEl.value = '';
+  toggleOwnerRecoveryPanel(false);
+
+  // Clear all admin DOM views/tables immediately for security
+  [
+    "pk-showroom-owners-tbody",
+    "owner-requests-list",
+    "owner-dealers-enforcement-list",
+    "owner-cars-moderation-list",
+    "owner-buyers-directory-list",
+    "owner-inquiries-admin-list",
+    "owner-blogs-admin-list"
+  ].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = "";
+  });
+
+  const ownerPortalBar = document.getElementById("owner-dealer-portal-bar");
+  if (ownerPortalBar) ownerPortalBar.classList.add("hidden");
+
+  if (typeof closeModal === "function") closeModal("modal-owner-pin");
+
   populateDealerDropdown();
   updateOwnerNavVisibility();
   renderOwnerConsole();
   if (appState.currentView === 'dealer-portal') renderDealerPortal();
+
   if (window.location.hash.toLowerCase() === '#owner' || window.location.hash.toLowerCase() === '#admin') {
     history.replaceState(null, '', window.location.pathname + window.location.search);
   }
   switchView('marketplace');
-  showToast("Owner Mode Locked", "Owner Desk has been hidden and locked.", "info");
+  showToast("Admin Logged Out", "Admin portal closed & locked. Email and Password are required to sign in again.", "info");
+}
+
+function lockOwnerConsole() {
+  logoutAdminConsole();
+}
+
+// ==========================================
+// ADMIN FORGOT PASSWORD & 6-DIGIT EMAIL RECOVERY
+// ==========================================
+let adminRecoveryState = {
+  email: '',
+  token: '',
+  fallbackCode: '',
+  expiresAt: 0,
+  attempts: 0,
+  mode: 'none' // 'email' | 'local-fallback'
+};
+
+function toggleOwnerRecoveryPanel(show) {
+  const loginForm = document.getElementById("owner-auth-form");
+  const recPanel = document.getElementById("owner-recovery-panel");
+  const step2 = document.getElementById("owner-recovery-step2");
+  if (!loginForm || !recPanel) return;
+
+  if (show) {
+    loginForm.classList.add("hidden");
+    recPanel.classList.remove("hidden");
+  } else {
+    recPanel.classList.add("hidden");
+    loginForm.classList.remove("hidden");
+    if (step2) step2.classList.add("hidden");
+    const reqForm = document.getElementById("owner-recovery-request-form");
+    const verForm = document.getElementById("owner-recovery-verify-form");
+    if (reqForm) reqForm.reset();
+    if (verForm) verForm.reset();
+    adminRecoveryState = { email: '', token: '', fallbackCode: '', expiresAt: 0, attempts: 0, mode: 'none' };
+  }
+  lucide.createIcons();
+}
+
+function generateCrypto6DigitCode() {
+  if (window.crypto && typeof window.crypto.getRandomValues === "function") {
+    const arr = new Uint32Array(1);
+    window.crypto.getRandomValues(arr);
+    return String(100000 + (arr[0] % 900000));
+  }
+  return String(Math.floor(100000 + Math.random() * 900000));
+}
+
+async function requestAndDispatchRecoveryCode(email) {
+  const statusBanner = document.getElementById("owner-recovery-status-banner");
+  const step2 = document.getElementById("owner-recovery-step2");
+  const sendBtn = document.getElementById("owner-recovery-send-btn");
+
+  if (email !== OWNER_EMAIL) {
+    showToast("Email Not Recognized", "Enter your registered Owner Admin email (desihoodcars@gmail.com).", "error");
+    return;
+  }
+
+  if (sendBtn) {
+    sendBtn.disabled = true;
+    sendBtn.innerHTML = '<span>Sending 6-Digit Code...</span>';
+  }
+
+  try {
+    let apiSent = false;
+    let apiToken = '';
+    let apiReason = '';
+
+    try {
+      const res = await fetch('/api/admin-recovery', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'send-code', email })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.ok && data.emailSent) {
+        apiSent = true;
+        apiToken = data.token || '';
+      } else {
+        apiReason = data.message || `Status ${res.status}`;
+      }
+    } catch (netErr) {
+      apiReason = 'Local preview server active (serverless email API not running here)';
+    }
+
+    if (apiSent) {
+      adminRecoveryState = {
+        email,
+        token: apiToken,
+        fallbackCode: '',
+        expiresAt: Date.now() + 10 * 60 * 1000,
+        attempts: 0,
+        mode: 'email'
+      };
+      if (statusBanner) {
+        statusBanner.className = "p-3.5 rounded-xl border border-emerald-500/40 bg-emerald-950/50 text-[11px] text-emerald-200 leading-relaxed";
+        statusBanner.innerHTML = `<strong>Recovery Email Sent!</strong> Check <strong>${escapeHtml(email)}</strong> for your 6-digit verification code (valid for 10 minutes).`;
+      }
+      if (step2) step2.classList.remove("hidden");
+      showToast("Recovery Email Sent", `6-digit recovery code sent to ${email}.`, "success");
+    } else {
+      // Honest 10-minute verification fallback when email API key / serverless runtime isn't active
+      const code = generateCrypto6DigitCode();
+      adminRecoveryState = {
+        email,
+        token: '',
+        fallbackCode: code,
+        expiresAt: Date.now() + 10 * 60 * 1000,
+        attempts: 0,
+        mode: 'local-fallback'
+      };
+      if (statusBanner) {
+        statusBanner.className = "p-3.5 rounded-xl border border-amber-500/40 bg-amber-950/40 text-[11px] text-amber-200 leading-relaxed space-y-1";
+        statusBanner.innerHTML = `
+          <div><strong>Email Delivery Not Configured Here:</strong> ${escapeHtml(apiReason)}. Add <code class="text-white">RESEND_API_KEY</code> in Vercel Environment Variables to email codes directly to Gmail.</div>
+          <div>Preview Verification Code (valid 10 min): <strong class="text-white font-mono text-sm tracking-widest bg-black/60 px-2 py-0.5 rounded">${code}</strong></div>
+        `;
+      }
+      if (step2) step2.classList.remove("hidden");
+      showToast("6-Digit Recovery Code Ready", "Verify using the 6-digit code shown below the recovery form.", "info");
+    }
+  } finally {
+    if (sendBtn) {
+      sendBtn.disabled = false;
+      sendBtn.innerHTML = '<i data-lucide="send" class="w-3.5 h-3.5"></i><span>Send 6-Digit Recovery Code</span>';
+      lucide.createIcons();
+    }
+  }
+}
+
+function handleRequestAdminRecoveryCode(e) {
+  e.preventDefault();
+  const email = (document.getElementById("owner-recovery-email")?.value || '').trim().toLowerCase();
+  requestAndDispatchRecoveryCode(email);
+}
+
+function resendAdminRecoveryCode() {
+  const email = adminRecoveryState.email || (document.getElementById("owner-recovery-email")?.value || '').trim().toLowerCase();
+  requestAndDispatchRecoveryCode(email);
+}
+
+async function handleVerifyAdminRecoveryCode(e) {
+  e.preventDefault();
+  const code = (document.getElementById("owner-recovery-code")?.value || '').trim();
+  const newPin = (document.getElementById("owner-recovery-new-pin")?.value || '').trim();
+  const confirmPin = (document.getElementById("owner-recovery-confirm-pin")?.value || '').trim();
+
+  if (!/^\d{6}$/.test(code)) {
+    showToast("Invalid Code Format", "Enter the exact 6-digit numeric recovery code.", "error");
+    return;
+  }
+  if (newPin.length < 4) {
+    showToast("Password Too Short", "New Admin Password / PIN must be at least 4 characters.", "error");
+    return;
+  }
+  if (newPin !== confirmPin) {
+    showToast("Password Mismatch", "New Password and Confirm Password must match.", "error");
+    return;
+  }
+  if (!adminRecoveryState.expiresAt || Date.now() > adminRecoveryState.expiresAt) {
+    showToast("Code Expired", "Your 6-digit recovery code has expired. Click Resend for a new code.", "error");
+    return;
+  }
+  if (adminRecoveryState.attempts >= 5) {
+    showToast("Too Many Attempts", "Maximum verification attempts reached. Request a fresh 6-digit code.", "error");
+    return;
+  }
+
+  adminRecoveryState.attempts += 1;
+
+  if (adminRecoveryState.mode === 'email') {
+    try {
+      const res = await fetch('/api/admin-recovery', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'verify-code',
+          email: adminRecoveryState.email,
+          code,
+          token: adminRecoveryState.token
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok || !data.verified) {
+        showToast("Verification Failed", data.message || "Incorrect 6-digit code.", "error");
+        return;
+      }
+    } catch (err) {
+      showToast("Verification Error", "Could not verify recovery code with server.", "error");
+      return;
+    }
+  } else {
+    if (code !== adminRecoveryState.fallbackCode) {
+      showToast("Incorrect Code", `The 6-digit code does not match. Attempt ${adminRecoveryState.attempts} of 5.`, "error");
+      return;
+    }
+  }
+
+  localStorage.setItem('desihood_owner_pin', newPin);
+  toggleOwnerRecoveryPanel(false);
+  const emailIn = document.getElementById("owner-auth-email");
+  const pinIn = document.getElementById("owner-auth-pin");
+  if (emailIn) emailIn.value = '';
+  if (pinIn) pinIn.value = '';
+  showToast("Admin Password Reset!", "Your new Admin Password/PIN is saved. Sign in with your Admin Email and new Password.", "success");
 }
 
 function openChangeOwnerPinModal() {
