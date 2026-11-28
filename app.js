@@ -1438,10 +1438,15 @@ function renderCarsGrid(carsList) {
             </span>
           </div>
 
-          <!-- Favorite Button -->
-          <button onclick="toggleFavorite('${car.id}', event)" class="absolute top-3 right-3 w-9 h-9 rounded-full bg-slate-950/70 hover:bg-slate-900 backdrop-blur-md flex items-center justify-center text-slate-300 hover:text-rose-500 transition-colors border border-slate-700/50 z-10">
-            <i data-lucide="heart" class="w-4 h-4 ${isFavorite ? 'text-rose-500 fill-rose-500' : ''}"></i>
-          </button>
+          <!-- Favorite & AI Poster Share Buttons -->
+          <div class="absolute top-3 right-3 flex items-center space-x-1.5 z-10">
+            <button onclick="openAiPosterStudio('${car.id}'); event.stopPropagation();" title="Make AI Promotional Poster &amp; Share" class="w-9 h-9 rounded-full bg-slate-950/75 hover:bg-red-600 backdrop-blur-md flex items-center justify-center text-amber-400 hover:text-white transition-colors border border-slate-700/60">
+              <i data-lucide="share-2" class="w-4 h-4"></i>
+            </button>
+            <button onclick="toggleFavorite('${car.id}', event)" title="Save Vehicle" class="w-9 h-9 rounded-full bg-slate-950/75 hover:bg-slate-900 backdrop-blur-md flex items-center justify-center text-slate-300 hover:text-rose-500 transition-colors border border-slate-700/60">
+              <i data-lucide="heart" class="w-4 h-4 ${isFavorite ? 'text-rose-500 fill-rose-500' : ''}"></i>
+            </button>
+          </div>
 
           <!-- Price overlay bottom right -->
           <div class="absolute bottom-3 right-3 text-right z-10">
@@ -2012,7 +2017,11 @@ function renderDealerInventoryTable(cars) {
           </button>
         </td>
 
-        <td class="py-3 px-4 text-right space-x-2">
+        <td class="py-3 px-4 text-right space-x-1.5 whitespace-nowrap">
+          <button onclick="openAiPosterStudio('${car.id}')" title="AI Poster &amp; Share to Social Media" class="px-2.5 py-1.5 rounded-lg bg-red-600/20 hover:bg-red-600 text-red-300 hover:text-white border border-red-500/40 text-xs font-bold inline-flex items-center space-x-1 transition-colors">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+            <span>AI Poster &amp; Share</span>
+          </button>
           <button onclick="openListingModal('${car.id}')" title="Edit Listing" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors">
             <i data-lucide="edit-3" class="w-4 h-4"></i>
           </button>
@@ -2143,10 +2152,11 @@ function openCarDetailModal(carId) {
   const dealer = getDealerById(car.dealerId);
   const isSold = car.status === 'sold';
   const container = document.getElementById("car-detail-content");
+  const allPics = [...new Set([car.image, ...(Array.isArray(car.images) ? car.images : [])].filter(Boolean))];
 
   container.innerHTML = `
     <div class="relative h-72 sm:h-96 w-full bg-slate-950 overflow-hidden">
-      <img src="${car.image}" alt="${car.make} ${car.model}" class="w-full h-full object-cover">
+      <img id="car-detail-hero-img" src="${allPics[0] || car.image}" alt="${car.make} ${car.model}" class="w-full h-full object-cover">
       <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent"></div>
 
       ${isSold ? `
@@ -2177,6 +2187,14 @@ function openCarDetailModal(carId) {
         </div>
       </div>
     </div>
+
+    ${allPics.length > 1 ? `
+      <div class="px-6 sm:px-8 pt-4 flex items-center gap-2.5 overflow-x-auto no-scrollbar">
+        ${allPics.map((src, idx) => `
+          <img src="${escapeHtml(src)}" alt="Photo ${idx + 1}" onclick="document.getElementById('car-detail-hero-img').src=this.src" class="w-20 h-14 rounded-xl object-cover border border-slate-700 hover:border-amber-400 cursor-pointer shrink-0 transition-all">
+        `).join('')}
+      </div>
+    ` : ''}
 
     <div class="p-6 sm:p-8 space-y-8">
       <div>
@@ -2247,7 +2265,11 @@ function openCarDetailModal(carId) {
           </div>
         </div>
 
-        <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+        <div class="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
+          <button onclick="openAiPosterStudio('${car.id}')" class="px-4 py-2.5 rounded-xl bg-red-600/20 hover:bg-red-600 text-red-300 hover:text-white text-xs font-extrabold border border-red-500/40 flex items-center space-x-1.5 transition-colors">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+            <span>AI Poster &amp; Share</span>
+          </button>
           <button onclick="closeModal('modal-car-detail'); openDealerProfileModal('${dealer.id}')" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold border border-slate-700">
             View Dealer Profile
           </button>
@@ -2751,6 +2773,64 @@ function toggleOldCarFormSection() {
   }
 }
 
+let listingUploadedPhotos = [];
+
+function openLatestDealerPoster() {
+  const dealer = getActiveDealer();
+  const dealerCars = (appState.cars || []).filter(c => !dealer || c.dealerId === dealer.id);
+  const targetCar = dealerCars[0] || (appState.cars || [])[0];
+  if (!targetCar) {
+    showToast("No Cars Yet", "Publish a car listing first to generate its AI Promotional Poster.", "info");
+    return;
+  }
+  if (typeof openAiPosterStudio === "function") openAiPosterStudio(targetCar.id);
+}
+
+function refreshListingPhotosPreview() {
+  const strip = document.getElementById("form-photos-preview-strip");
+  if (!strip) return;
+  const mainImg = (document.getElementById("form-image")?.value || '').trim();
+  const extraRaw = (document.getElementById("form-extra-images")?.value || '').trim();
+  const extraUrls = extraRaw ? extraRaw.split(/[\s,\n]+/).filter(Boolean) : [];
+  const all = [...new Set([
+    ...(mainImg ? [mainImg] : []),
+    ...listingUploadedPhotos,
+    ...extraUrls
+  ].filter(Boolean))];
+
+  strip.innerHTML = all.map((src, i) => `
+    <div class="relative w-16 h-12 rounded-lg overflow-hidden border ${i === 0 ? 'border-amber-400' : 'border-slate-700'} bg-black">
+      <img src="${escapeHtml(src)}" alt="Photo ${i + 1}" class="w-full h-full object-cover">
+      <span class="absolute bottom-0 right-0 px-1 bg-black/80 text-[9px] font-bold text-white">${i === 0 ? 'Main' : '#' + (i + 1)}</span>
+    </div>
+  `).join('');
+}
+
+function handleListingMultiPhotosUpload(inputEl) {
+  const files = Array.from(inputEl?.files || []);
+  if (!files.length) return;
+  let loaded = 0;
+  const batch = [];
+  files.forEach((file, idx) => {
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      if (ev.target?.result) batch[idx] = ev.target.result;
+      loaded++;
+      if (loaded === files.length) {
+        const clean = batch.filter(Boolean);
+        listingUploadedPhotos = [...listingUploadedPhotos, ...clean];
+        const mainInput = document.getElementById("form-image");
+        if (mainInput && (!mainInput.value.trim() || SAMPLE_CAR_IMAGES.includes(mainInput.value.trim()))) {
+          mainInput.value = clean[0];
+        }
+        refreshListingPhotosPreview();
+        showToast("Pictures Attached", `Added ${clean.length} car picture(s) for Marketplace & AI Poster.`, "success");
+      }
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 function openListingModal(carId = null, presetOldCar = false) {
   const activeDealer = getActiveDealer();
   if (!activeDealer) {
@@ -2761,6 +2841,7 @@ function openListingModal(carId = null, presetOldCar = false) {
     showToast("Dealership Banned", "This dealership is banned by the Owner and cannot list vehicles.", "error");
     return;
   }
+  listingUploadedPhotos = [];
   const form = document.getElementById("car-listing-form");
   const title = document.getElementById("listing-modal-title");
   form.reset();
@@ -2780,11 +2861,17 @@ function openListingModal(carId = null, presetOldCar = false) {
       document.getElementById("form-mileage").value = car.mileage;
       if (document.getElementById("form-kilometers")) document.getElementById("form-kilometers").value = getCarKilometers(car);
       if (document.getElementById("form-color") && car.color) document.getElementById("form-color").value = car.color;
+      if (document.getElementById("form-engine")) document.getElementById("form-engine").value = car.engine || "";
       document.getElementById("form-body-style").value = car.bodyStyle;
       document.getElementById("form-fuel-type").value = car.fuelType;
       document.getElementById("form-transmission").value = car.transmission;
       document.getElementById("form-condition").value = car.condition;
       document.getElementById("form-image").value = car.image;
+      const extras = Array.isArray(car.images) ? car.images.filter(u => u && u !== car.image) : [];
+      listingUploadedPhotos = extras.filter(u => u.startsWith('data:'));
+      if (document.getElementById("form-extra-images")) {
+        document.getElementById("form-extra-images").value = extras.filter(u => !u.startsWith('data:')).join(', ');
+      }
       document.getElementById("form-description").value = car.description;
       if (car.workingDetails) {
         if (document.getElementById("form-working-score")) document.getElementById("form-working-score").value = car.workingDetails.score || "90% Excellent Working";
@@ -2810,6 +2897,7 @@ function openListingModal(carId = null, presetOldCar = false) {
     insertSampleImage();
   }
 
+  refreshListingPhotosPreview();
   toggleOldCarFormSection();
   openModal("modal-listing");
   lucide.createIcons();
@@ -2818,6 +2906,7 @@ function openListingModal(carId = null, presetOldCar = false) {
 function insertSampleImage() {
   const random = SAMPLE_CAR_IMAGES[Math.floor(Math.random() * SAMPLE_CAR_IMAGES.length)];
   document.getElementById("form-image").value = random;
+  refreshListingPhotosPreview();
 }
 
 function handleListingSubmit(e) {
@@ -2850,6 +2939,17 @@ function handleListingSubmit(e) {
     notes: document.getElementById("form-working-notes")?.value.trim() || ""
   };
 
+  const mainImgInput = document.getElementById("form-image").value.trim();
+  const extraRaw = (document.getElementById("form-extra-images")?.value || '').trim();
+  const extraUrls = extraRaw ? extraRaw.split(/[\s,\n]+/).filter(Boolean) : [];
+  const allListingPics = [...new Set([
+    ...(mainImgInput ? [mainImgInput] : []),
+    ...listingUploadedPhotos,
+    ...extraUrls
+  ].filter(Boolean))];
+  const heroImage = allListingPics[0] || SAMPLE_CAR_IMAGES[0];
+  const engineSpec = (document.getElementById("form-engine")?.value || '').trim() || document.getElementById("form-fuel-type").value;
+
   const carData = {
     id: id || "car-" + Date.now(),
     dealerId: activeDealer.id,
@@ -2861,13 +2961,15 @@ function handleListingSubmit(e) {
     mileage: mileage,
     kilometers: kilometers,
     color: color,
+    engine: engineSpec,
     isOldCar: isOldCar,
     workingDetails: workingDetails,
     bodyStyle: document.getElementById("form-body-style").value,
     fuelType: document.getElementById("form-fuel-type").value,
     transmission: document.getElementById("form-transmission").value,
     condition: condition,
-    image: document.getElementById("form-image").value.trim(),
+    image: heroImage,
+    images: allListingPics.length ? allListingPics : [heroImage],
     description: document.getElementById("form-description").value.trim() || "Quality inspected by certified specialists.",
     status: "active",
     featured: true,
@@ -2877,12 +2979,14 @@ function handleListingSubmit(e) {
   if (id) {
     const idx = appState.cars.findIndex(c => c.id === id);
     if (idx !== -1) appState.cars[idx] = { ...appState.cars[idx], ...carData };
-    showToast("Listing Updated", `${carData.make} ${carData.model} updated successfully.`, "success");
+    showToast("Listing Updated", `${carData.make} ${carData.model} updated (${carData.images.length} photo${carData.images.length > 1 ? 's' : ''}).`, "success");
   } else {
     appState.cars.unshift(carData);
-    showToast("Vehicle Listed!", `${carData.make} ${carData.model} (${color}) is now live on Desi Hood Cars.`, "success");
+    showToast("Vehicle Listed!", `${carData.make} ${carData.model} published with ${carData.images.length} picture(s)!`, "success");
   }
 
+  const shouldOpenPoster = document.getElementById("form-auto-poster")?.checked;
+  listingUploadedPhotos = [];
   saveAllState();
   closeModal("modal-listing");
   renderMarketplace();
@@ -2891,6 +2995,9 @@ function handleListingSubmit(e) {
   if (typeof sbUpsertRecord === "function" && typeof mapCarToRow === "function") {
     const savedCar = appState.cars.find(c => c.id === carData.id) || carData;
     sbUpsertRecord("cars", mapCarToRow(savedCar));
+  }
+  if (shouldOpenPoster && typeof openAiPosterStudio === "function") {
+    setTimeout(() => openAiPosterStudio(carData.id), 180);
   }
 }
 
