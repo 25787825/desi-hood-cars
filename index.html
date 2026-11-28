@@ -15,16 +15,18 @@
   <link rel="canonical" id="canonical-link" href="https://desi-hood-cars.vercel.app/">
   <link rel="icon" type="image/jpeg" href="gallery/desi-hood-cars-brand.jpg">
   <link rel="apple-touch-icon" href="gallery/desi-hood-cars-brand.jpg">
-  <meta property="og:type" content="website">
+  <meta property="og:type" id="og-type" content="website">
   <meta property="og:site_name" content="Desi Hood Cars">
   <meta property="og:url" id="og-url" content="https://desi-hood-cars.vercel.app/">
   <meta property="og:title" id="og-title" content="Desi Hood Cars by Ahmad Raza | Buy • Sell • Drive Better">
   <meta property="og:description" id="og-description" content="Buy • Sell • Drive Better — Interactive 3D Automotive Marketplace & Verified Dealership Network.">
-  <meta property="og:image" content="https://desi-hood-cars.vercel.app/gallery/desi-hood-cars-brand.jpg">
+  <meta property="og:image" id="og-image" content="https://desi-hood-cars.vercel.app/gallery/desi-hood-cars-brand.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" id="twitter-title" content="Desi Hood Cars by Ahmad Raza">
   <meta name="twitter:description" id="twitter-description" content="Buy • Sell • Drive Better — Certified Vehicle Marketplace & Car Financing.">
-  <meta name="twitter:image" content="https://desi-hood-cars.vercel.app/gallery/desi-hood-cars-brand.jpg">
+  <meta name="twitter:image" id="twitter-image" content="https://desi-hood-cars.vercel.app/gallery/desi-hood-cars-brand.jpg">
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -3782,13 +3784,20 @@
         </div>
 
         <div>
-          <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Cover Photo URL or Upload Image *</label>
+          <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Blog Pictures (First Picture = Public Thumbnail) *</label>
           <div class="flex flex-col sm:flex-row gap-2">
-            <input type="text" id="blog-form-image" required value="gallery/gallery-1.jpg" placeholder="https://... or gallery/gallery-1.jpg" class="flex-grow bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500">
+            <input type="text" id="blog-form-image" oninput="updateBlogFormThumbnailPreview()" placeholder="Paste image URL or leave blank to use 1st picture from blog content" class="flex-grow bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500">
             <label class="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-amber-400 rounded-xl text-xs font-bold cursor-pointer text-center whitespace-nowrap border border-slate-700">
-              <input type="file" accept="image/*" onchange="handleBlogFileUpload(this)" class="hidden">
-              Upload Photo
+              <input type="file" accept="image/*" multiple onchange="handleBlogFileUpload(this)" class="hidden">
+              Upload Photo(s)
             </label>
+          </div>
+          <div id="blog-form-preview-wrap" class="mt-2.5 flex items-center gap-3 p-2.5 rounded-xl bg-slate-950/80 border border-slate-800">
+            <img id="blog-form-preview" src="gallery/gallery-1.jpg" alt="Blog Thumbnail Preview" class="w-20 h-14 rounded-lg object-cover border border-slate-700 shrink-0">
+            <div class="text-[11px] text-slate-400 leading-snug">
+              <span class="text-amber-400 font-bold block">Public Card &amp; Social Share Thumbnail (1st Picture)</span>
+              <span id="blog-form-preview-note">Shown automatically on the public Blog card and WhatsApp/Facebook/X share preview.</span>
+            </div>
           </div>
           <div class="flex flex-wrap items-center gap-2 mt-2 text-[11px]">
             <span class="text-slate-500">Quick Picks:</span>
@@ -3805,7 +3814,7 @@
 
         <div>
           <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Full Blog Content *</label>
-          <textarea id="blog-form-content" required rows="5" placeholder="Write your full car review, specs breakdown, driving impressions, or buyer tips..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500"></textarea>
+          <textarea id="blog-form-content" required rows="5" oninput="updateBlogFormThumbnailPreview()" placeholder="Write your full car review, specs breakdown, driving impressions, or buyer tips (optional: paste photo URLs or upload above)..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500"></textarea>
         </div>
 
         <button type="submit" class="w-full py-3.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wider transition-colors btn-primary-glow flex items-center justify-center space-x-2">

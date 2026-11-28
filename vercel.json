@@ -3,6 +3,7 @@
   "rewrites": [
     { "source": "/.netlify/functions/auto-news", "destination": "/api/auto-news" },
     { "source": "/.netlify/functions/new-cars", "destination": "/api/new-cars" },
+    { "source": "/share", "destination": "/api/share" },
     { "source": "/new-cars", "destination": "/index.html" },
     { "source": "/used-cars", "destination": "/index.html" },
     { "source": "/bikes-and-ev", "destination": "/index.html" },

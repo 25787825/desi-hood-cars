@@ -103,6 +103,11 @@ async function fetchRssChannel(feedCfg) {
       const timestamp = isNaN(parsedDate.getTime()) ? Date.now() : parsedDate.getTime();
       const publishedDate = new Date(timestamp).toISOString().split('T')[0];
 
+      // Extract article thumbnail image from RSS media tags / enclosure / inline HTML <img>
+      const mediaMatch = block.match(/<(?:media:content|media:thumbnail|enclosure)\b[^>]*\burl=["']([^"']+)["']/i)
+        || block.match(/<img\b[^>]*\bsrc=["']([^"']+)["']/i);
+      const itemImage = mediaMatch ? decodeHtmlEntities(mediaMatch[1]) : '';
+
       if (title && link) {
         items.push({
           id: `${feedCfg.id}-${makeShortId(guid)}`,
@@ -110,6 +115,7 @@ async function fetchRssChannel(feedCfg) {
           brand: feedCfg.brand,
           title,
           link,
+          image: /^https?:\/\//i.test(itemImage) ? itemImage : '',
           pubDate: pubDateRaw,
           publishedDate,
           timestamp,

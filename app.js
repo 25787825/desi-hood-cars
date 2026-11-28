@@ -116,6 +116,11 @@ document.addEventListener("DOMContentLoaded", () => {
   } else {
     updateSeoMetadata('marketplace');
   }
+  const deepArticleId = new URLSearchParams(window.location.search || '').get('article');
+  if (deepArticleId) {
+    switchView('blogs', { skipHistory: true });
+    setTimeout(() => openBlogDetailModal(deepArticleId), 120);
+  }
   checkPrivateOwnerRoute();
   if (typeof syncFromSupabase === "function") {
     syncFromSupabase();
@@ -480,6 +485,7 @@ function resolveInitialViewFromUrl() {
 }
 
 function updateSeoMetadata(viewName, customMeta = null) {
+  const defaultBrandImg = `${SITE_ORIGIN}/gallery/desi-hood-cars-brand.jpg`;
   const meta = Object.assign({}, SEO_ROUTES[viewName] || SEO_ROUTES.marketplace, customMeta || {});
   document.title = meta.title;
 
@@ -489,13 +495,17 @@ function updateSeoMetadata(viewName, customMeta = null) {
   };
 
   const canonicalUrl = meta.noindex ? `${SITE_ORIGIN}/` : `${SITE_ORIGIN}${meta.path === '/' ? '/' : meta.path}`;
+  const ogImg = meta.image || defaultBrandImg;
   setMeta('meta[name="description"]', 'content', meta.description);
   setMeta('#canonical-link', 'href', canonicalUrl);
+  setMeta('#og-type', 'content', meta.type || 'website');
   setMeta('#og-url', 'content', canonicalUrl);
   setMeta('#og-title', 'content', meta.title);
   setMeta('#og-description', 'content', meta.description);
+  setMeta('#og-image', 'content', ogImg);
   setMeta('#twitter-title', 'content', meta.title);
   setMeta('#twitter-description', 'content', meta.description);
+  setMeta('#twitter-image', 'content', ogImg);
   setMeta('#meta-robots', 'content', meta.noindex ? 'noindex, nofollow' : 'index, follow');
 }
 
@@ -3303,6 +3313,68 @@ let newsroomState = {
   stories: []
 };
 
+function extractBlogImagesFromText(text = '') {
+  const found = [];
+  const src = String(text || '');
+  const mdRe = /!\[[^\]]*\]\(([^)\s]+)\)/g;
+  const htmlRe = /<img[^>]+src=["']([^"']+)["']/gi;
+  const urlRe = /(https?:\/\/[^\s"'<>]+?\.(?:jpg|jpeg|png|webp|gif)(?:\?[^\s"'<>]*)?)/gi;
+  let m;
+  while ((m = mdRe.exec(src)) !== null) if (m[1]) found.push(m[1].trim());
+  while ((m = htmlRe.exec(src)) !== null) if (m[1]) found.push(m[1].trim());
+  while ((m = urlRe.exec(src)) !== null) if (m[1]) found.push(m[1].trim());
+  return [...new Set(found)];
+}
+
+function getBlogThumbnailUrl(blog) {
+  if (!blog) return 'gallery/gallery-1.jpg';
+  if (Array.isArray(blog.images) && blog.images.length && blog.images[0]) {
+    return blog.images[0];
+  }
+  if (blog.image && String(blog.image).trim()) {
+    return String(blog.image).trim();
+  }
+  const inlineImgs = extractBlogImagesFromText(`${blog.content || ''}\n${blog.excerpt || ''}`);
+  if (inlineImgs.length) return inlineImgs[0];
+  return pickAutoNewsCoverImage(blog.title || '', blog.carTag || '', 0);
+}
+
+function toAbsoluteShareImageUrl(rawImg = '', titleHint = '') {
+  const origin = /^https?:\/\/(?!localhost|127\.0\.0\.1)/i.test(window.location.origin)
+    ? window.location.origin
+    : SITE_ORIGIN;
+  const trimmed = String(rawImg || '').trim();
+  if (!trimmed || trimmed.startsWith('data:') || trimmed.length > 900) {
+    const inferred = pickAutoNewsCoverImage(titleHint, titleHint, 0);
+    return /^https?:\/\//i.test(inferred) ? inferred : `${origin}/${inferred.replace(/^\/+/, '')}`;
+  }
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  if (trimmed.startsWith('//')) return `https:${trimmed}`;
+  return `${origin}/${trimmed.replace(/^\/+/, '')}`;
+}
+
+function findBlogOrNewsById(blogId) {
+  const foundBlog = (appState.blogs || []).find(b => b.id === blogId);
+  if (foundBlog) return foundBlog;
+  const rawId = String(blogId || '').replace(/^rss-/, '');
+  const story = (newsroomState.stories || []).find(s => `rss-${s.id}` === blogId || s.id === rawId);
+  if (!story) return null;
+  return {
+    id: `rss-${story.id}`,
+    title: story.title,
+    category: 'Auto News & Updates',
+    author: story.sourceName || `${story.brand} News`,
+    carTag: story.brand,
+    sourceUrl: story.link,
+    readTime: 'Live RSS',
+    publishedDate: story.publishedDate,
+    image: story.image || pickAutoNewsCoverImage(story.title, story.brandId, 0),
+    excerpt: (story.relatedHeadlines && story.relatedHeadlines[0]) || `${story.brand} automotive news covered by ${story.sourceName || 'Google News'}.`,
+    content: story.relatedHeadlines?.join('\n') || '',
+    liveHeadlines: story.relatedHeadlines || []
+  };
+}
+
 function extractBlogSourceUrl(blog) {
   if (!blog) return '';
   if (blog.sourceUrl) return blog.sourceUrl;
@@ -3313,17 +3385,29 @@ function extractBlogSourceUrl(blog) {
 
 function buildBlogShareText(blog) {
   const sourceUrl = extractBlogSourceUrl(blog);
-  const siteUrl = `${window.location.origin}${window.location.pathname}#view-blogs`;
+  const thumbRaw = getBlogThumbnailUrl(blog);
+  const absThumb = toAbsoluteShareImageUrl(thumbRaw, `${blog.carTag || ''} ${blog.title || ''}`);
+  const shareHost = /^https?:\/\/(?!localhost|127\.0\.0\.1)/i.test(window.location.origin)
+    ? window.location.origin
+    : SITE_ORIGIN;
+  const params = new URLSearchParams({
+    article: blog.id || '',
+    title: (blog.title || 'Desi Hood Cars Update').slice(0, 140),
+    desc: (blog.excerpt || blog.carTag || 'Latest automotive news and reviews on Desi Hood Cars.').slice(0, 220),
+    img: absThumb
+  });
+  const shareUrl = `${shareHost}/share?${params.toString()}`;
   const parts = [
     `${blog.title} — Desi Hood Cars`,
     blog.excerpt || '',
-    sourceUrl ? `Official Source: ${sourceUrl}` : '',
-    `Read & Share: ${siteUrl}`
+    sourceUrl ? `Source: ${sourceUrl}` : '',
+    `Read with Preview: ${shareUrl}`
   ].filter(Boolean);
   return {
     title: blog.title,
     text: parts.join('\n\n'),
-    url: sourceUrl || siteUrl
+    url: shareUrl,
+    image: absThumb
   };
 }
 
@@ -3341,14 +3425,14 @@ async function copyShareText(text, label = 'Update link') {
       document.execCommand('copy');
       document.body.removeChild(ta);
     }
-    showToast('Ready to Share!', `${label} copied to clipboard.`, 'success');
+    showToast('Ready to Share!', `${label} copied with thumbnail preview link.`, 'success');
   } catch (err) {
     showToast('Copy Complete', 'Share text prepared for pasting.', 'info');
   }
 }
 
 async function shareBlogPost(blogId) {
-  const blog = (appState.blogs || []).find(b => b.id === blogId);
+  const blog = findBlogOrNewsById(blogId);
   if (!blog) return;
   const payload = buildBlogSharePayload(blog);
   if (navigator.share) {
@@ -3363,7 +3447,7 @@ async function shareBlogPost(blogId) {
       if (err?.name === 'AbortError') return;
     }
   }
-  await copyShareText(payload.text, `"${blog.title}"`);
+  await copyShareText(payload.url + '\n\n' + payload.title, `"${blog.title}"`);
 }
 
 function buildBlogSharePayload(blog) {
@@ -3371,14 +3455,14 @@ function buildBlogSharePayload(blog) {
 }
 
 function shareBlogToWhatsApp(blogId) {
-  const blog = (appState.blogs || []).find(b => b.id === blogId);
+  const blog = findBlogOrNewsById(blogId);
   if (!blog) return;
   const payload = buildBlogShareText(blog);
   window.open(`https://wa.me/?text=${encodeURIComponent(payload.text)}`, '_blank', 'noopener,noreferrer');
 }
 
 function shareBlogToX(blogId) {
-  const blog = (appState.blogs || []).find(b => b.id === blogId);
+  const blog = findBlogOrNewsById(blogId);
   if (!blog) return;
   const payload = buildBlogShareText(blog);
   window.open(
@@ -3389,7 +3473,7 @@ function shareBlogToX(blogId) {
 }
 
 function shareBlogToFacebook(blogId) {
-  const blog = (appState.blogs || []).find(b => b.id === blogId);
+  const blog = findBlogOrNewsById(blogId);
   if (!blog) return;
   const payload = buildBlogShareText(blog);
   window.open(
@@ -3488,7 +3572,7 @@ async function syncBrandAutoUpdates(manualTrigger = false) {
             sourceUrl: item.link,
             readTime: 'Live RSS',
             publishedDate: item.publishedDate || syncDate,
-            image: pickAutoNewsCoverImage(item.title, item.brandId, idx),
+            image: item.image || pickAutoNewsCoverImage(item.title, item.brandId, idx),
             excerpt: excerptText,
             content: contentBody,
             liveHeadlines: item.relatedHeadlines || [],
@@ -3569,35 +3653,40 @@ function renderNewsroom() {
     return;
   }
 
-  grid.innerHTML = filtered.slice(0, 12).map(item => {
+  grid.innerHTML = filtered.slice(0, 12).map((item, idx) => {
     const blogId = `rss-${item.id}`;
+    const storyThumb = item.image || pickAutoNewsCoverImage(item.title, item.brandId, idx);
     return `
-      <div class="rounded-2xl bg-slate-900/85 border border-slate-800 hover:border-emerald-500/40 p-4 flex flex-col justify-between transition-colors">
+      <div class="rounded-2xl bg-slate-900/85 border border-slate-800 hover:border-emerald-500/40 overflow-hidden flex flex-col justify-between transition-colors">
         <div>
-          <div class="flex items-center justify-between gap-2 mb-2">
-            <div class="flex items-center gap-1.5 min-w-0">
-              <span class="px-2 py-0.5 rounded bg-amber-500/15 border border-amber-500/30 text-amber-400 text-[10px] font-extrabold uppercase shrink-0">
+          <div onclick="openBlogDetailModal('${blogId}')" class="relative h-36 w-full bg-slate-950 overflow-hidden cursor-pointer">
+            <img src="${escapeHtml(storyThumb)}" alt="${escapeHtml(item.title)}" class="w-full h-full object-cover">
+            <div class="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-transparent"></div>
+            <div class="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between gap-1.5">
+              <span class="px-2 py-0.5 rounded bg-black/80 border border-amber-500/40 text-amber-400 text-[10px] font-extrabold uppercase shrink-0">
                 ${escapeHtml(item.brand)}
               </span>
-              <span class="px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-semibold truncate">
+              <span class="px-2 py-0.5 rounded bg-black/80 border border-emerald-500/30 text-emerald-300 text-[10px] font-semibold truncate">
                 ${escapeHtml(item.sourceName || 'News')}
               </span>
             </div>
-            <span class="text-[10px] text-slate-400 shrink-0">${escapeHtml(item.publishedDate || '')}</span>
+            <span class="absolute bottom-2 right-2.5 text-[10px] text-slate-300 font-semibold">${escapeHtml(item.publishedDate || '')}</span>
           </div>
 
-          <h4 onclick="openBlogDetailModal('${blogId}')" class="text-xs sm:text-sm font-extrabold text-white hover:text-amber-400 cursor-pointer leading-snug line-clamp-2">
-            ${escapeHtml(item.title)}
-          </h4>
+          <div class="p-4 pb-2">
+            <h4 onclick="openBlogDetailModal('${blogId}')" class="text-xs sm:text-sm font-extrabold text-white hover:text-amber-400 cursor-pointer leading-snug line-clamp-2">
+              ${escapeHtml(item.title)}
+            </h4>
 
-          ${(item.relatedHeadlines && item.relatedHeadlines.length) ? `
-            <p class="text-[11px] text-slate-400 mt-1.5 line-clamp-1">
-              ${escapeHtml(item.relatedHeadlines[0])}
-            </p>
-          ` : ''}
+            ${(item.relatedHeadlines && item.relatedHeadlines.length) ? `
+              <p class="text-[11px] text-slate-400 mt-1.5 line-clamp-1">
+                ${escapeHtml(item.relatedHeadlines[0])}
+              </p>
+            ` : ''}
+          </div>
         </div>
 
-        <div class="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center gap-1.5">
+        <div class="mx-4 mb-4 mt-2 pt-2.5 border-t border-slate-800/80 flex items-center gap-1.5">
           <button onclick="openBlogDetailModal('${blogId}')" class="flex-1 px-2.5 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500 text-amber-400 hover:text-slate-950 border border-amber-500/30 text-[11px] font-bold transition-colors">
             Read &amp; Share
           </button>
@@ -3607,6 +3696,9 @@ function renderNewsroom() {
           </a>
           <button onclick="shareBlogToWhatsApp('${blogId}')" title="Share on WhatsApp" class="p-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500 text-emerald-400 hover:text-slate-950 border border-emerald-500/30 transition-colors">
             <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>
+          </button>
+          <button onclick="shareBlogToFacebook('${blogId}')" title="Share on Facebook" class="px-2 py-1.5 rounded-lg bg-blue-500/15 hover:bg-blue-500 text-blue-400 hover:text-white border border-blue-500/30 text-[10px] font-extrabold transition-colors">
+            FB
           </button>
           <button onclick="shareBlogPost('${blogId}')" title="Share / Copy" class="p-1.5 rounded-lg bg-slate-800 hover:bg-sky-500 text-slate-300 hover:text-slate-950 border border-slate-700 transition-colors">
             <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
@@ -3669,11 +3761,12 @@ function renderBlogs() {
 
   container.innerHTML = filtered.map(blog => {
     const sourceUrl = extractBlogSourceUrl(blog);
+    const thumbUrl = getBlogThumbnailUrl(blog);
     return `
     <article class="glass-card rounded-3xl overflow-hidden border border-slate-800 flex flex-col justify-between group">
       <div>
         <div onclick="openBlogDetailModal('${blog.id}')" class="relative h-52 bg-slate-950 overflow-hidden cursor-pointer">
-          <img src="${blog.image || 'gallery/gallery-1.jpg'}" alt="${escapeHtml(blog.title)}" class="w-full h-full object-cover">
+          <img src="${escapeHtml(thumbUrl)}" alt="${escapeHtml(blog.title)}" class="w-full h-full object-cover">
           <span class="absolute top-3 left-3 px-2.5 py-1 rounded-lg bg-slate-900/90 border border-sky-500/40 text-sky-400 text-[10px] font-extrabold uppercase tracking-wider">
             ${escapeHtml(blog.category)}
           </span>
@@ -3744,16 +3837,32 @@ function renderBlogs() {
 }
 
 function openBlogDetailModal(blogId) {
-  const blog = (appState.blogs || []).find(b => b.id === blogId);
+  const blog = findBlogOrNewsById(blogId);
   if (!blog) return;
 
   const container = document.getElementById("blog-detail-content");
   if (!container) return;
 
   const sourceUrl = extractBlogSourceUrl(blog);
+  const heroThumb = getBlogThumbnailUrl(blog);
+  const absThumb = toAbsoluteShareImageUrl(heroThumb, `${blog.carTag || ''} ${blog.title || ''}`);
+  updateSeoMetadata('blogs', {
+    title: `${blog.title} | Desi Hood Cars`,
+    description: blog.excerpt || blog.title,
+    image: absThumb,
+    type: 'article',
+    path: `/auto-news-blogs?article=${encodeURIComponent(blog.id)}`
+  });
+
+  const extraImages = (Array.isArray(blog.images) ? blog.images : []).filter((u, i) => i > 0 && u && u !== heroThumb);
   const liveHeadlines = Array.isArray(blog.liveHeadlines) ? blog.liveHeadlines.filter(Boolean) : [];
   const paragraphs = (blog.content || blog.excerpt || '').split(/\n+/).filter(Boolean)
     .map(p => `<p class="text-sm text-slate-300 leading-relaxed">${escapeHtml(p)}</p>`).join("");
+  const extraGalleryHtml = extraImages.length ? `
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+      ${extraImages.map((imgUrl, idx) => `<img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(blog.title)} Photo ${idx + 2}" class="w-full h-44 object-cover rounded-2xl border border-slate-800">`).join('')}
+    </div>
+  ` : '';
   const liveBlock = liveHeadlines.length ? `
     <div class="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 space-y-2">
       <div class="flex items-center justify-between gap-2">
@@ -3768,7 +3877,7 @@ function openBlogDetailModal(blogId) {
 
   container.innerHTML = `
     <div class="relative h-64 sm:h-80 bg-slate-950 overflow-hidden rounded-t-3xl">
-      <img src="${blog.image || 'gallery/gallery-1.jpg'}" alt="${escapeHtml(blog.title)}" class="w-full h-full object-cover">
+      <img src="${escapeHtml(heroThumb)}" alt="${escapeHtml(blog.title)}" class="w-full h-full object-cover">
       <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/30 to-transparent"></div>
       <div class="absolute bottom-5 left-6 right-6">
         <span class="inline-block px-3 py-1 rounded-lg bg-amber-500 text-slate-950 text-[10px] font-extrabold uppercase tracking-wider mb-2">
@@ -3796,6 +3905,7 @@ function openBlogDetailModal(blogId) {
       <div class="space-y-4">
         ${liveBlock}
         ${paragraphs}
+        ${extraGalleryHtml}
       </div>
 
       ${sourceUrl ? `
@@ -3846,34 +3956,73 @@ function openBlogDetailModal(blogId) {
   lucide.createIcons();
 }
 
+let pendingBlogUploadedImages = [];
+
+function resolveDraftBlogFirstPicture() {
+  const explicit = (document.getElementById("blog-form-image")?.value || '').trim();
+  const contentText = (document.getElementById("blog-form-content")?.value || '') + '\n' + (document.getElementById("blog-form-excerpt")?.value || '');
+  const inlineImgs = extractBlogImagesFromText(contentText);
+  return pendingBlogUploadedImages[0] || explicit || inlineImgs[0] || 'gallery/gallery-1.jpg';
+}
+
+function updateBlogFormThumbnailPreview() {
+  const preview = document.getElementById("blog-form-preview");
+  const note = document.getElementById("blog-form-preview-note");
+  const firstPic = resolveDraftBlogFirstPicture();
+  if (preview) preview.src = firstPic;
+  if (note) {
+    const count = pendingBlogUploadedImages.length;
+    note.textContent = count > 1
+      ? `${count} photos attached — 1st picture selected as public thumbnail & social share card.`
+      : '1st picture is shown on the public Blog card and WhatsApp/Facebook/X share preview.';
+  }
+}
+
 function openBlogUploadModal() {
+  pendingBlogUploadedImages = [];
   const form = document.querySelector("#modal-blog-upload form");
   if (form) form.reset();
   const imgInput = document.getElementById("blog-form-image");
-  if (imgInput) imgInput.value = "gallery/gallery-1.jpg";
+  if (imgInput) imgInput.value = "";
   const readInput = document.getElementById("blog-form-readtime");
   if (readInput) readInput.value = "4 min read";
+  updateBlogFormThumbnailPreview();
   openModal("modal-blog-upload");
   lucide.createIcons();
 }
 
 function setBlogCoverPreset(url) {
+  pendingBlogUploadedImages = pendingBlogUploadedImages.filter(u => !u.startsWith('gallery/'));
   const input = document.getElementById("blog-form-image");
   if (input) input.value = url;
+  updateBlogFormThumbnailPreview();
 }
 
 function handleBlogFileUpload(inputEl) {
-  const file = inputEl?.files?.[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const imgInput = document.getElementById("blog-form-image");
-    if (imgInput && e.target?.result) {
-      imgInput.value = e.target.result;
-      showToast("Photo Attached", `"${file.name}" attached to your blog post.`, "success");
-    }
-  };
-  reader.readAsDataURL(file);
+  const files = Array.from(inputEl?.files || []);
+  if (!files.length) return;
+
+  pendingBlogUploadedImages = [];
+  let loaded = 0;
+  files.forEach((file, idx) => {
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      if (ev.target?.result) {
+        pendingBlogUploadedImages[idx] = ev.target.result;
+      }
+      loaded++;
+      if (loaded === files.length) {
+        pendingBlogUploadedImages = pendingBlogUploadedImages.filter(Boolean);
+        const imgInput = document.getElementById("blog-form-image");
+        if (imgInput && pendingBlogUploadedImages[0]) {
+          imgInput.value = pendingBlogUploadedImages[0];
+        }
+        updateBlogFormThumbnailPreview();
+        showToast("Photo(s) Attached", `First photo set as public blog thumbnail (${pendingBlogUploadedImages.length} total).`, "success");
+      }
+    };
+    reader.readAsDataURL(file);
+  });
 }
 
 function handleBlogUploadSubmit(e) {
@@ -3881,6 +4030,18 @@ function handleBlogUploadSubmit(e) {
 
   const sourceUrl = document.getElementById("blog-form-source-url")?.value.trim() || "";
   const rawContent = document.getElementById("blog-form-content").value.trim();
+  const excerpt = document.getElementById("blog-form-excerpt").value.trim();
+  const explicitImg = (document.getElementById("blog-form-image")?.value || '').trim();
+  const contentImgs = extractBlogImagesFromText(`${rawContent}\n${excerpt}`);
+
+  // Always promote the first picture in the blog as the public card & share thumbnail
+  const orderedImages = [...new Set([
+    ...pendingBlogUploadedImages,
+    ...(explicitImg ? [explicitImg] : []),
+    ...contentImgs
+  ].filter(Boolean))];
+  const firstPicture = orderedImages[0] || "gallery/gallery-1.jpg";
+
   const fullContent = sourceUrl && !rawContent.includes(sourceUrl)
     ? `${rawContent}\n\nOfficial Press Source: ${sourceUrl}`
     : rawContent;
@@ -3894,11 +4055,13 @@ function handleBlogUploadSubmit(e) {
     sourceUrl,
     readTime: document.getElementById("blog-form-readtime")?.value.trim() || "4 min read",
     publishedDate: new Date().toISOString().split("T")[0],
-    image: document.getElementById("blog-form-image").value.trim() || "gallery/gallery-1.jpg",
-    excerpt: document.getElementById("blog-form-excerpt").value.trim(),
+    image: firstPicture,
+    images: orderedImages.length ? orderedImages : [firstPicture],
+    excerpt,
     content: fullContent
   };
 
+  pendingBlogUploadedImages = [];
   appState.blogs.unshift(newBlog);
   saveAllState();
   if (typeof sbUpsertRecord === "function" && typeof mapBlogToRow === "function") {
@@ -3906,8 +4069,9 @@ function handleBlogUploadSubmit(e) {
   }
   closeModal("modal-blog-upload");
   renderBlogs();
+  renderBrowseMoreBlogsPreview();
 
-  showToast("Update Published!", `"${newBlog.title}" is now live & ready to share.`, "success");
+  showToast("Update Published!", `"${newBlog.title}" is live with its 1st picture set as the public & social thumbnail.`, "success");
 }
 
 function deleteBlogPost(blogId) {
@@ -5573,7 +5737,7 @@ function renderBrowseMoreBlogsPreview() {
   const blogs = (appState.blogs || []).slice(0, 6);
   container.innerHTML = blogs.map(b => `
     <div class="glass-card rounded-2xl overflow-hidden border border-slate-800 flex flex-col justify-between cursor-pointer" onclick="openBlogDetailModal('${b.id}')">
-      <img src="${escapeHtml(b.image || 'gallery/gallery-1.jpg')}" alt="${escapeHtml(b.title)}" class="h-44 w-full object-cover">
+      <img src="${escapeHtml(getBlogThumbnailUrl(b))}" alt="${escapeHtml(b.title)}" class="h-44 w-full object-cover">
       <div class="p-4 space-y-2">
         <span class="px-2 py-0.5 rounded bg-sky-500/15 text-sky-400 text-[10px] font-bold uppercase">${escapeHtml(b.category)}</span>
         <h4 class="text-sm font-extrabold text-white line-clamp-2">${escapeHtml(b.title)}</h4>
