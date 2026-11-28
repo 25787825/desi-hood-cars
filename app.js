@@ -2773,6 +2773,7 @@ function toggleOldCarFormSection() {
   }
 }
 
+const MAX_LISTING_PHOTOS = 8;
 let listingUploadedPhotos = [];
 
 function openLatestDealerPoster() {
@@ -2786,22 +2787,45 @@ function openLatestDealerPoster() {
   if (typeof openAiPosterStudio === "function") openAiPosterStudio(targetCar.id);
 }
 
-function refreshListingPhotosPreview() {
-  const strip = document.getElementById("form-photos-preview-strip");
-  if (!strip) return;
+function getAllCurrentListingDraftPhotos() {
   const mainImg = (document.getElementById("form-image")?.value || '').trim();
   const extraRaw = (document.getElementById("form-extra-images")?.value || '').trim();
   const extraUrls = extraRaw ? extraRaw.split(/[\s,\n]+/).filter(Boolean) : [];
-  const all = [...new Set([
+  return [...new Set([
     ...(mainImg ? [mainImg] : []),
     ...listingUploadedPhotos,
     ...extraUrls
-  ].filter(Boolean))];
+  ].filter(Boolean))].slice(0, MAX_LISTING_PHOTOS);
+}
+
+function removeListingPhotoAt(srcToRemove) {
+  const mainEl = document.getElementById("form-image");
+  const extraEl = document.getElementById("form-extra-images");
+  listingUploadedPhotos = listingUploadedPhotos.filter(u => u !== srcToRemove);
+  if (extraEl && extraEl.value) {
+    extraEl.value = extraEl.value.split(/[\s,\n]+/).filter(u => u && u !== srcToRemove).join(', ');
+  }
+  if (mainEl && mainEl.value.trim() === srcToRemove) {
+    const nextPhotos = [...listingUploadedPhotos, ...(extraEl?.value ? extraEl.value.split(/[\s,\n]+/).filter(Boolean) : [])];
+    mainEl.value = nextPhotos[0] || '';
+  }
+  refreshListingPhotosPreview();
+}
+
+function refreshListingPhotosPreview() {
+  const strip = document.getElementById("form-photos-preview-strip");
+  const countBadge = document.getElementById("form-photos-count-badge");
+  const all = getAllCurrentListingDraftPhotos();
+  if (countBadge) {
+    countBadge.textContent = `${all.length} / ${MAX_LISTING_PHOTOS} Photos`;
+  }
+  if (!strip) return;
 
   strip.innerHTML = all.map((src, i) => `
-    <div class="relative w-16 h-12 rounded-lg overflow-hidden border ${i === 0 ? 'border-amber-400' : 'border-slate-700'} bg-black">
+    <div class="relative w-16 h-12 rounded-lg overflow-hidden border ${i === 0 ? 'border-amber-400' : 'border-slate-700'} bg-black group">
       <img src="${escapeHtml(src)}" alt="Photo ${i + 1}" class="w-full h-full object-cover">
-      <span class="absolute bottom-0 right-0 px-1 bg-black/80 text-[9px] font-bold text-white">${i === 0 ? 'Main' : '#' + (i + 1)}</span>
+      <span class="absolute bottom-0 left-0 px-1 bg-black/80 text-[9px] font-bold text-white">${i === 0 ? 'Main' : '#' + (i + 1)}</span>
+      <button type="button" onclick="removeListingPhotoAt(${JSON.stringify(src).replace(/"/g, '&quot;')})" title="Remove photo" class="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-rose-600 text-white text-[9px] font-black flex items-center justify-center opacity-85 hover:opacity-100">&times;</button>
     </div>
   `).join('');
 }
@@ -2809,22 +2833,36 @@ function refreshListingPhotosPreview() {
 function handleListingMultiPhotosUpload(inputEl) {
   const files = Array.from(inputEl?.files || []);
   if (!files.length) return;
+
+  const existing = getAllCurrentListingDraftPhotos().length;
+  const remainingSlots = MAX_LISTING_PHOTOS - existing;
+  if (remainingSlots <= 0) {
+    showToast("Maximum 8 Pictures Reached", `Each car listing supports a maximum of ${MAX_LISTING_PHOTOS} pictures. Remove an existing photo first.`, "error");
+    inputEl.value = "";
+    return;
+  }
+
+  const allowedFiles = files.slice(0, remainingSlots);
+  const trimmedCount = files.length - allowedFiles.length;
+
   let loaded = 0;
   const batch = [];
-  files.forEach((file, idx) => {
+  allowedFiles.forEach((file, idx) => {
     const reader = new FileReader();
     reader.onload = (ev) => {
       if (ev.target?.result) batch[idx] = ev.target.result;
       loaded++;
-      if (loaded === files.length) {
+      if (loaded === allowedFiles.length) {
         const clean = batch.filter(Boolean);
-        listingUploadedPhotos = [...listingUploadedPhotos, ...clean];
+        listingUploadedPhotos = [...listingUploadedPhotos, ...clean].slice(0, MAX_LISTING_PHOTOS);
         const mainInput = document.getElementById("form-image");
         if (mainInput && (!mainInput.value.trim() || SAMPLE_CAR_IMAGES.includes(mainInput.value.trim()))) {
           mainInput.value = clean[0];
         }
         refreshListingPhotosPreview();
-        showToast("Pictures Attached", `Added ${clean.length} car picture(s) for Marketplace & AI Poster.`, "success");
+        const extraMsg = trimmedCount > 0 ? ` (${trimmedCount} skipped — max ${MAX_LISTING_PHOTOS} pictures per car)` : '';
+        showToast("Pictures Attached", `Added ${clean.length} picture(s) cleanly${extraMsg}.`, trimmedCount > 0 ? "info" : "success");
+        inputEl.value = "";
       }
     };
     reader.readAsDataURL(file);
@@ -2942,11 +2980,12 @@ function handleListingSubmit(e) {
   const mainImgInput = document.getElementById("form-image").value.trim();
   const extraRaw = (document.getElementById("form-extra-images")?.value || '').trim();
   const extraUrls = extraRaw ? extraRaw.split(/[\s,\n]+/).filter(Boolean) : [];
-  const allListingPics = [...new Set([
+  const rawCombined = [...new Set([
     ...(mainImgInput ? [mainImgInput] : []),
     ...listingUploadedPhotos,
     ...extraUrls
   ].filter(Boolean))];
+  const allListingPics = rawCombined.slice(0, MAX_LISTING_PHOTOS);
   const heroImage = allListingPics[0] || SAMPLE_CAR_IMAGES[0];
   const engineSpec = (document.getElementById("form-engine")?.value || '').trim() || document.getElementById("form-fuel-type").value;
 

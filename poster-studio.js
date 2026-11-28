@@ -295,8 +295,8 @@
       canvas.height = H;
       const ctx = canvas.getContext('2d');
 
-      // Load up to 5 dealer photos + brand logo cleanly
-      const pics = getCarAllPictures(car).slice(0, 5);
+      // Load up to 8 dealer photos + brand logo cleanly
+      const pics = getCarAllPictures(car).slice(0, 8);
       const [logoImg, ...loadedPics] = await Promise.all([
         loadImageSafe('gallery/desi-hood-cars-brand.jpg'),
         ...pics.map(src => loadImageSafe(src))
@@ -378,13 +378,15 @@
 
       cursorY += 104;
 
-      // 4. Main Car Hero Photo + Multi-Photo Collage Strip (Uses ALL dealer shared pictures!)
+      // 4. Main Car Hero Photo + Multi-Photo Collage Grid (Combines up to 8 dealer pictures!)
       const hasExtraPics = pics.length > 1;
+      const thumbs = safePics.slice(1, 8);
+      const hasSecondRow = thumbs.length > 4;
       const heroH = posterState.format === 'square'
-        ? (hasExtraPics ? 320 : 410)
+        ? (hasSecondRow ? 250 : (hasExtraPics ? 320 : 410))
         : posterState.format === 'story'
-        ? (hasExtraPics ? 580 : 720)
-        : (hasExtraPics ? 420 : 520);
+        ? (hasSecondRow ? 460 : (hasExtraPics ? 580 : 720))
+        : (hasSecondRow ? 340 : (hasExtraPics ? 420 : 520));
 
       drawCoverImage(ctx, safePics[0], pad, cursorY, innerW, heroH, 24);
       ctx.strokeStyle = theme.border;
@@ -401,24 +403,28 @@
       ctx.font = '700 15px Arial, sans-serif';
       ctx.fillText(photoBadge, pad + 34, cursorY + 41);
 
-      cursorY += heroH + 16;
+      cursorY += heroH + 14;
 
-      // Extra photos collage row (2 to 4 additional photos from dealer!)
+      // Extra photos collage rows (supports 2 to 8 pictures cleanly!)
       if (hasExtraPics) {
-        const thumbs = safePics.slice(1, 5);
-        const thumbGap = 14;
-        const thumbCount = thumbs.length;
-        const thumbW = (innerW - thumbGap * (thumbCount - 1)) / thumbCount;
-        const thumbH = posterState.format === 'square' ? 115 : posterState.format === 'story' ? 190 : 138;
-        thumbs.forEach((tImg, idx) => {
-          const tx = pad + idx * (thumbW + thumbGap);
-          drawCoverImage(ctx, tImg, tx, cursorY, thumbW, thumbH, 14);
-          ctx.strokeStyle = 'rgba(255,255,255,0.22)';
-          ctx.lineWidth = 1.5;
-          drawRoundedRect(ctx, tx, cursorY, thumbW, thumbH, 14);
-          ctx.stroke();
+        const thumbGap = 12;
+        const rows = hasSecondRow ? [thumbs.slice(0, 4), thumbs.slice(4, 7)] : [thumbs];
+        const rowH = hasSecondRow
+          ? (posterState.format === 'square' ? 76 : posterState.format === 'story' ? 126 : 92)
+          : (posterState.format === 'square' ? 115 : posterState.format === 'story' ? 190 : 138);
+
+        rows.forEach((rowImgs, rIdx) => {
+          const thumbW = (innerW - thumbGap * (rowImgs.length - 1)) / rowImgs.length;
+          rowImgs.forEach((tImg, cIdx) => {
+            const tx = pad + cIdx * (thumbW + thumbGap);
+            drawCoverImage(ctx, tImg, tx, cursorY, thumbW, rowH, 12);
+            ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+            ctx.lineWidth = 1.5;
+            drawRoundedRect(ctx, tx, cursorY, thumbW, rowH, 12);
+            ctx.stroke();
+          });
+          cursorY += rowH + (rIdx < rows.length - 1 ? 10 : 16);
         });
-        cursorY += thumbH + 18;
       }
 
       // 5. Specs Grid Cards (All dealer-provided specs)
